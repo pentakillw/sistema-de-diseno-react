@@ -1,27 +1,37 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import tinycolor from 'tinycolor2';
-import { Sparkles, Wand2, HelpCircle, X, Check, Clipboard, Download, Upload, AlertCircle, RefreshCcw, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Wand2, HelpCircle, X, Check, Clipboard, Download, Upload, AlertCircle, RefreshCcw } from 'lucide-react';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
 
-// --- CONFIGURACIÓN Y VALORES POR DEFECTO ---
+// --- Funciones de Utilidad de Colores (lógica interna en inglés) ---
 
-const availableFonts = {
-  'Poppins': '"Poppins", sans-serif',
-  'Roboto': '"Roboto", sans-serif',
-  'Open Sans': '"Open Sans", sans-serif',
-  'Lato': '"Lato", sans-serif',
-  'Montserrat': '"Montserrat", sans-serif',
-  'Segoe UI': '"Segoe UI", system-ui, sans-serif',
+const generateShades = (hex) => {
+  if (!tinycolor(hex).isValid()) return Array(10).fill('#cccccc');
+  const baseColor = tinycolor(hex);
+  const shades = [];
+  shades.push(baseColor.clone().darken(15).toHexString());
+  shades.push(baseColor.clone().darken(7).toHexString());
+  shades.push(baseColor.clone().toHexString());
+  shades.push(baseColor.clone().lighten(8).toHexString());
+  shades.push(baseColor.clone().lighten(16).toHexString());
+  shades.push(baseColor.clone().lighten(24).toHexString());
+  shades.push(baseColor.clone().lighten(32).toHexString());
+  shades.push(baseColor.clone().lighten(40).toHexString());
+  shades.push(baseColor.clone().lighten(48).toHexString());
+  shades.push(baseColor.clone().lighten(56).toHexString());
+  return shades;
 };
 
-const defaultState = {
-    theme: 'dark',
-    brandColor: '#8a2be2',
-    isGrayAuto: true,
-    grayColor: '#6f6a75',
-    font: 'Poppins',
-    fxSeparator: ';',
-};
+const generateGrayShades = (hex) => {
+    if (!tinycolor(hex).isValid()) return Array(10).fill('#cccccc');
+    const baseColor = tinycolor(hex);
+    const shades = [];
+    const darkGray = baseColor.clone().darken(30);
+    for (let i = 0; i < 10; i++) {
+       shades.push(darkGray.clone().lighten(i * 9).toHexString());
+    }
+    return shades;
+}
 
 const displayStylesConfig = {
   'Título Grande': { fontSize: '2rem', fontWeight: '700' },
@@ -35,22 +45,8 @@ const displayStylesConfig = {
   'Subtítulo': { fontSize: '0.75rem', fontWeight: '400' },
 };
 
-// --- FUNCIONES DE UTILIDAD Y LÓGICA DE NEGOCIO ---
-
-const generateShades = (hex) => {
-  if (!tinycolor(hex).isValid()) return Array(10).fill('#cccccc');
-  const baseColor = tinycolor(hex);
-  const shades = Array(10).fill('');
-  shades[5] = baseColor.toHexString();
-  for (let i = 1; i <= 5; i++) shades[5 - i] = baseColor.clone().darken(i * 8).toHexString();
-  for (let i = 1; i <= 4; i++) shades[5 + i] = baseColor.clone().lighten(i * 8).toHexString();
-  return shades;
-};
-
 const generatePowerFxCode = (themeData, separator) => {
   const { brandShades, grayShades, stylePalette, theme, brandColor, grayColor, font } = themeData;
-  const { backgroundColors, foregroundColors, borderColors, actionColors, decorateColors } = stylePalette;
-
   const formatStylePalette = (palette) => palette.map(item => `    "${item.name}": "${item.color.toUpperCase()}"`).join(`${separator}\n`);
   const fontStylesRecord = Object.entries(displayStylesConfig)
     .map(([name, styles]) => `    "${name.replace(/ /g, '')}": { Font: Font.'${font.split(' ')[0]}'${separator} Size: ${parseFloat(styles.fontSize) * 10}${separator} Bold: ${styles.fontWeight === '700'} }`)
@@ -58,31 +54,32 @@ const generatePowerFxCode = (themeData, separator) => {
 
   return `
 // --- TEMA DE DISEÑO GENERADO ---
-// Modo: ${theme === 'light' ? 'Claro' : 'Oscuro'} | Fuente: ${font}
+// Modo: ${theme === 'light' ? 'Claro' : 'Oscuro'}
+// Fuente: ${font}
 // Marca: ${brandColor.toUpperCase()} | Base Gris: ${grayColor.toUpperCase()}
 ClearCollect(
     colSistemaDeDiseño${separator}
     {
         Marca: {
-${brandShades.map((s, i) => `    t${i * 100 === 0 ? '50' : (i+1) * 100}: "${s.toUpperCase()}"`).join(`${separator}\n`)}
+${brandShades.map((s, i) => `    t${i * 100 === 0 ? '0' : i * 100}: "${s.toUpperCase()}"`).join(`${separator}\n`)}
         }${separator}
         Gris: {
-${grayShades.map((s, i) => `    t${i * 100 === 0 ? '50' : (i+1) * 100}: "${s.toUpperCase()}"`).join(`${separator}\n`)}
+${grayShades.map((s, i) => `    t${i * 100 === 0 ? '0' : i * 100}: "${s.toUpperCase()}"`).join(`${separator}\n`)}
         }${separator}
         Fondos: {
-${formatStylePalette(backgroundColors)}
+${formatStylePalette(stylePalette.backgroundColors)}
         }${separator}
         Textos: {
-${formatStylePalette(foregroundColors)}
+${formatStylePalette(stylePalette.foregroundColors)}
         }${separator}
         Bordes: {
-${formatStylePalette(borderColors)}
+${formatStylePalette(stylePalette.borderColors)}
         }${separator}
         Acciones: {
-${formatStylePalette(actionColors)}
+${formatStylePalette(stylePalette.actionColors)}
         }${separator}
         Decorativos: {
-${formatStylePalette(decorateColors)}
+${formatStylePalette(stylePalette.decorateColors)}
         }${separator}
         Fuentes: {
 ${fontStylesRecord}
@@ -92,428 +89,638 @@ ${fontStylesRecord}
   `.trim();
 };
 
-const extractColorsFromImage = (imageUrl, colorCount = 6) => {
-    return new Promise((resolve, reject) => {
-        const image = new Image();
-        image.crossOrigin = "Anonymous";
-        image.onload = () => {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d', { willReadFrequently: true });
-            const maxDimension = 100;
-            let width = image.width, height = image.height;
 
-            if (width > height) { if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; } } 
-            else { if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; } }
-            
-            canvas.width = width; canvas.height = height;
-            context.drawImage(image, 0, 0, width, height);
-            
-            try {
-                const imageData = context.getImageData(0, 0, width, height).data;
-                const colorMap = {};
-                for (let i = 0; i < imageData.length; i += 16) {
-                    const [r, g, b] = [imageData[i], imageData[i + 1], imageData[i + 2]];
-                    const hex = tinycolor({ r, g, b }).toHexString();
-                    if (tinycolor(hex).getLuminance() > 0.1 && tinycolor(hex).getLuminance() < 0.9) {
-                       colorMap[hex] = (colorMap[hex] || 0) + 1;
-                    }
-                }
-                const sortedColors = Object.keys(colorMap).sort((a, b) => colorMap[b] - colorMap[a]);
-                resolve(sortedColors.slice(0, colorCount));
-            } catch (error) { reject(new Error("No se pudo procesar la imagen.")); }
-        };
-        image.onerror = () => reject(new Error("No se pudo cargar la imagen."));
-        image.src = imageUrl;
-    });
-};
+// --- Componentes ---
 
-// --- HOOKS PERSONALIZADOS ---
-
-const useDesignSystem = (config) => {
-    const { brandColor, grayColor: manualGrayColor, isGrayAuto, theme, font, fxSeparator } = config;
-
-    const effectiveGrayColor = useMemo(() => isGrayAuto ? tinycolor(brandColor).desaturate(85).toHexString() : manualGrayColor, [brandColor, manualGrayColor, isGrayAuto]);
-    const brandShades = useMemo(() => generateShades(brandColor), [brandColor]);
-    const grayShades = useMemo(() => generateShades(effectiveGrayColor), [effectiveGrayColor]);
-
-    const stylePalette = useMemo(() => {
-        if (brandShades.length < 10 || grayShades.length < 10) return null;
-        const infoBase = '#0ea5e9', successBase = '#22c55e', attentionBase = '#f97316', criticalBase = '#ef4444';
-        const mix = (c1, c2) => tinycolor.mix(c1, c2, 15).saturate(10).toHexString();
-        const info = mix(infoBase, effectiveGrayColor), success = mix(successBase, effectiveGrayColor), attention = mix(attentionBase, effectiveGrayColor), critical = mix(criticalBase, effectiveGrayColor);
-
-        const palettes = {
-            dark: {
-                backgroundColors: [ { name: 'Predeterminado', color: grayShades[0] }, { name: 'Tarjeta', color: grayShades[1] }, { name: 'Apagado', color: grayShades[2] }, { name: 'Sutil', color: tinycolor(grayShades[0]).lighten(5).toHexString() } ],
-                foregroundColors: [ { name: 'Predeterminado', color: grayShades[9] }, { name: 'Apagado', color: grayShades[7] }, { name: 'Sutil', color: grayShades[6] } ],
-                borderColors: [ { name: 'Predeterminado', color: grayShades[2] }, { name: 'Fuerte', color: grayShades[4] } ],
-            },
-            light: {
-                backgroundColors: [ { name: 'Predeterminado', color: '#FFFFFF' }, { name: 'Tarjeta', color: '#FFFFFF' }, { name: 'Apagado', color: grayShades[8] }, { name: 'Sutil', color: grayShades[8] } ],
-                foregroundColors: [ { name: 'Predeterminado', color: grayShades[0] }, { name: 'Apagado', color: grayShades[3] }, { name: 'Sutil', color: grayShades[5] } ],
-                borderColors: [ { name: 'Predeterminado', color: grayShades[7] }, { name: 'Fuerte', color: grayShades[5] } ],
-            },
-            common: {
-                actionColors: [ { name: 'Primario', color: brandShades[5] }, { name: 'PrimarioFlotante', color: brandShades[6] }, { name: 'PrimarioPresionado', color: brandShades[7] }, { name: 'Secundario', color: grayShades[4] }, { name: 'SecundarioPresionado', color: grayShades[5] } ],
-                decorateColors: [ { name: 'Azul1', color: info }, { name: 'Verde1', color: success }, { name: 'Naranja1', color: attention }, { name: 'Critico1', color: critical } ],
-            }
-        };
-        return { ...palettes[theme], ...palettes.common };
-    }, [brandShades, grayShades, theme, effectiveGrayColor]);
-    
-    const accessibility = useMemo(() => {
-        if (!stylePalette) return { btn: { ratio: 0, level: 'Fail'}, text: { ratio: 0, level: 'Fail'} };
-        const btnBg = stylePalette.actionColors.find(c => c.name === 'Primario').color;
-        const btnFg = tinycolor.mostReadable(btnBg, ["#FFFFFF", "#000000"]).toHexString();
-        const textBg = stylePalette.backgroundColors.find(c => c.name === 'Predeterminado').color;
-        const textFg = stylePalette.foregroundColors.find(c => c.name === 'Predeterminado').color;
-
-        const btnContrast = tinycolor.readability(btnBg, btnFg);
-        const textContrast = tinycolor.readability(textBg, textFg);
-        const getLevel = (ratio) => (ratio >= 7 ? 'AAA' : ratio >= 4.5 ? 'AA' : 'Fallido');
-
-        return {
-            btn: { ratio: btnContrast.toFixed(2), level: getLevel(btnContrast) },
-            text: { ratio: textContrast.toFixed(2), level: getLevel(textContrast) },
-            btnFg
-        };
-    }, [stylePalette]);
-
-    const generatedCode = useMemo(() => {
-        if (!stylePalette) return "// Generando código...";
-        return generatePowerFxCode({ brandShades, grayShades, stylePalette, theme, brandColor, grayColor: effectiveGrayColor, font }, fxSeparator);
-    }, [stylePalette, brandShades, grayShades, theme, brandColor, effectiveGrayColor, font, fxSeparator]);
-
-    return { brandShades, grayShades, stylePalette, accessibility, generatedCode, effectiveGrayColor };
-};
-
-const useThemeEffect = (stylePalette, font) => {
-    useEffect(() => {
-      if (!stylePalette) return;
-      const root = document.documentElement;
-      root.style.fontFamily = availableFonts[font];
-      
-      const mappings = {
-        '--bg-default': stylePalette.backgroundColors.find(c=>c.name==='Predeterminado').color,
-        '--bg-card': stylePalette.backgroundColors.find(c=>c.name==='Tarjeta').color,
-        '--bg-muted': stylePalette.backgroundColors.find(c=>c.name==='Apagado').color,
-        '--text-default': stylePalette.foregroundColors.find(c=>c.name==='Predeterminado').color,
-        '--text-muted': stylePalette.foregroundColors.find(c=>c.name==='Apagado').color,
-        '--border-default': stylePalette.borderColors.find(c=>c.name==='Predeterminado').color,
-        '--border-strong': stylePalette.borderColors.find(c=>c.name==='Fuerte').color,
-        '--action-primary-default': stylePalette.actionColors.find(c=>c.name==='Primario').color,
-        '--action-primary-hover': stylePalette.actionColors.find(c=>c.name==='PrimarioFlotante').color,
-        '--action-secondary-default': stylePalette.actionColors.find(c=>c.name==='Secundario').color,
-        '--action-secondary-hover': tinycolor(stylePalette.actionColors.find(c=>c.name==='Secundario').color).lighten(5).toHexString(),
-      };
-      
-      Object.entries(mappings).forEach(([key, value]) => root.style.setProperty(key, value));
-    }, [stylePalette, font]);
-};
-
-
-// --- SUB-COMPONENTES DE UI ---
 const ColorPalette = ({ title, color, hex, shades, onShadeCopy, themeOverride }) => (
-    <div>
-        <div className="flex items-center mb-2">
-            <div className={`w-10 h-10 rounded-md mr-3 border ${themeOverride === 'light' ? 'border-gray-200' : 'border-gray-700'}`} style={{ backgroundColor: color }}></div>
-            <div>
-                <p className={`text-sm font-medium ${themeOverride === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>{title}</p>
-                <p className={`text-xs font-mono ${themeOverride === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>{hex.toUpperCase()}</p>
+  <div className="mb-4">
+    <div className="flex items-center mb-2">
+      <div className="w-10 h-10 rounded-md mr-3 border" style={{ backgroundColor: color, borderColor: themeOverride === 'light' ? '#E5E7EB' : '#4B5563' }}></div>
+      <div>
+        <p className="text-sm font-medium" style={{ color: themeOverride === 'light' ? '#111827' : '#F9FAFB' }}>{title}</p>
+        <p className="text-xs font-mono" style={{ color: themeOverride === 'light' ? '#6B7280' : '#9CA3AF' }}>{hex.toUpperCase()}</p>
+      </div>
+    </div>
+    <div className="flex rounded-md overflow-hidden h-8 relative group">
+      {shades.map((shade, index) => (
+        <div 
+            key={index} 
+            className="flex-1 cursor-pointer transition-transform duration-100 ease-in-out group-hover:transform group-hover:scale-y-110 hover:!scale-125 hover:z-10" 
+            style={{ backgroundColor: shade }}
+            onClick={() => onShadeCopy(shade)}
+            title={`Copiar ${shade.toUpperCase()}`}
+        />
+      ))}
+    </div>
+     <div className="flex text-xs font-mono px-1" style={{ color: themeOverride === 'light' ? '#6B7280' : '#9CA3AF' }}>
+        {Array.from({ length: 10 }).map((_, index) => (
+            <div key={index} className="flex-1 text-center">T{index * 100 === 0 ? '0' : index * 100}</div>
+        ))}
+    </div>
+  </div>
+);
+
+const StyleItem = ({ name, color, onColorCopy }) => (
+  <div 
+    className="flex items-center mb-2 cursor-pointer group"
+    onClick={() => onColorCopy(color)}
+  >
+    {color && <div className="w-5 h-5 rounded-full mr-3 border" style={{ backgroundColor: color, borderColor: 'var(--border-strong)' }}></div>}
+    <span className="text-sm group-hover:underline" style={{ color: 'var(--text-muted)'}}>{name}</span>
+  </div>
+);
+
+const StyleCard = ({ title, children }) => (
+  <div className="p-4 rounded-lg flex-1 min-w-[200px] border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
+    <h3 className="font-semibold mb-4 text-sm" style={{ color: 'var(--text-default)'}}>{title}</h3>
+    {children}
+  </div>
+);
+
+const Switch = ({ checked, onCheckedChange }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    onClick={() => onCheckedChange(!checked)}
+    className={`${
+      checked ? 'bg-[var(--action-primary-default)]' : 'bg-[var(--bg-muted)]'
+    } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[var(--action-primary-default)] focus:ring-offset-2`}
+  >
+    <span
+      aria-hidden="true"
+      className={`${
+        checked ? 'translate-x-5' : 'translate-x-0'
+      } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+    />
+  </button>
+);
+
+const HelpModal = ({ onClose }) => (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div className="p-8 rounded-xl border max-w-2xl w-full relative" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
+            <button onClick={onClose} className="absolute top-4 right-4" style={{ color: 'var(--text-muted)'}}>
+                <X size={24}/>
+            </button>
+            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-default)'}}>Guía de Uso del Sistema de Diseño</h2>
+            <div className="space-y-3 text-sm" style={{ color: 'var(--text-muted)'}}>
+                <p>¡Bienvenido! Esta herramienta te ayuda a crear y exportar sistemas de diseño coherentes y accesibles para tus aplicaciones.</p>
+                <ol className="list-decimal list-inside space-y-2">
+                    <li><strong style={{ color: 'var(--text-default)'}}>Elige un Color de Marca:</strong> Usa el selector de color o el botón "Aleatorio" para encontrar un color principal accesible.</li>
+                    <li><strong style={{ color: 'var(--text-default)'}}>Ajusta la Escala de Grises:</strong> Por defecto, se genera un gris armónico. Desactiva "Gris Automático" para elegir un gris base personalizado.</li>
+                    <li><strong style={{ color: 'var(--text-default)'}}>Selecciona una Fuente:</strong> Cambia la tipografía de la interfaz para ver cómo afecta al diseño general.</li>
+                    <li><strong style={{ color: 'var(--text-default)'}}>Exporta e Importa Temas:</strong> Guarda tu trabajo como un archivo JSON y cárgalo más tarde para continuar donde lo dejaste.</li>
+                    <li><strong style={{ color: 'var(--text-default)'}}>Copia y Exporta a Power Fx:</strong> Elige tu separador regional (`,` o `;`), haz clic en cualquier color para copiarlo o muestra y copia el código Power Fx completo.</li>
+                </ol>
             </div>
-        </div>
-        <div className="flex rounded-md overflow-hidden h-8 relative group">
-            {shades.map((shade, index) => (
-                <div key={index} className="flex-1 cursor-pointer transition-transform duration-100 ease-in-out group-hover:transform group-hover:scale-y-110 hover:!scale-125 hover:z-10"
-                    style={{ backgroundColor: shade, border: index === 5 ? `2px solid ${tinycolor(shade).isLight() ? 'black' : 'white'}` : 'none', zIndex: index === 5 ? 20 : 10 }}
-                    onClick={() => onShadeCopy(shade)} title={`Copiar ${shade.toUpperCase()}`} />
-            ))}
-        </div>
-        <div className={`flex text-xs font-mono px-1 ${themeOverride === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
-            {Array.from({ length: 10 }).map((_, index) => (
-                <div key={index} className={`flex-1 text-center ${index === 5 ? 'font-bold' : ''}`}>T{index === 0 ? '50' : (index+1)*100}</div>
-            ))}
         </div>
     </div>
 );
 
-const ColorPickerInput = ({ label, color, setColor }) => {
-    const [isPickerVisible, setIsPickerVisible] = useState(false);
-    return (
-        <div className="relative flex items-center gap-2">
-            <label className="text-sm" style={{color: 'var(--text-muted)'}}>{label}:</label>
-            <div className="flex items-center rounded-md" style={{backgroundColor: 'var(--bg-muted)'}}>
-                <div className="w-7 h-7 rounded-l-md cursor-pointer border-r" style={{ backgroundColor: color, borderColor: 'var(--border-strong)' }} onClick={() => setIsPickerVisible(p => !p)} />
-                <HexColorInput color={color} onChange={setColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{color: 'var(--text-default)'}} prefixed />
-            </div>
-            {isPickerVisible && (
-                <div className="absolute z-50 top-full mt-2 left-0 w-56">
-                    <div className="fixed inset-0" onClick={() => setIsPickerVisible(false)} />
-                    <HexColorPicker color={color} onChange={setColor} />
-                </div>
-            )}
-        </div>
-    );
+
+// --- Componente Principal ---
+
+const availableFonts = {
+  'Poppins': '"Poppins", sans-serif',
+  'Roboto Slab': '"Roboto Slab", serif',
+  'Inconsolata': '"Inconsolata", monospace',
+  'Playfair Display': '"Playfair Display", serif',
+  'Montserrat': '"Montserrat", sans-serif',
+  'Lato': '"Lato", sans-serif',
+  'Courier Prime': '"Courier Prime", monospace',
+  'Roboto': '"Roboto", sans-serif',
+  'Open Sans': '"Open Sans", sans-serif',
+  'Segoe UI': '"Segoe UI", system-ui, sans-serif',
 };
 
-const ImagePaletteExtractor = ({ onColorSelect, showNotification }) => {
-    const [imagePreview, setImagePreview] = useState(null);
-    const [extractedColors, setExtractedColors] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const fileInputRef = useRef(null);
-
-    const handleImageUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            setImagePreview(e.target.result);
-            setIsLoading(true);
-            setExtractedColors([]);
-            try {
-                const colors = await extractColorsFromImage(e.target.result);
-                setExtractedColors(colors);
-                showNotification('¡Paleta extraída con éxito!');
-            } catch (error) {
-                showNotification(error.message, 'error');
-            } finally { setIsLoading(false); }
-        };
-        reader.readAsDataURL(file);
-    };
-
-    return (
-        <div className="p-6 rounded-xl border" style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
-            <h2 className="font-bold text-lg mb-4">Crear Paleta desde Imagen</h2>
-            <div className="grid md:grid-cols-2 gap-6 items-center">
-                <div onClick={() => fileInputRef.current.click()} className="w-full h-48 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors relative overflow-hidden" style={{borderColor: 'var(--border-strong)', backgroundColor: 'var(--bg-muted)', color: 'var(--text-muted)'}}>
-                    {imagePreview ? <img src={imagePreview} alt="Vista previa" className="w-full h-full object-cover"/> : (<><ImageIcon size={40} /><p className="mt-2 text-sm font-semibold">Haz clic para subir una imagen</p></>)}
-                    {isLoading && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><div className="w-8 h-8 border-4 border-dashed rounded-full animate-spin border-white"></div></div>}
-                </div>
-                <div className="w-full">
-                    {extractedColors.length > 0 ? (
-                        <>
-                           <p className="text-sm mb-3" style={{color: 'var(--text-muted)'}}>Colores extraídos (haz clic para usar):</p>
-                           <div className="flex flex-wrap gap-3">
-                            {extractedColors.map(color => <div key={color} onClick={() => onColorSelect(color)} title={`Usar ${color.toUpperCase()}`} className="w-10 h-10 rounded-full cursor-pointer border-2 hover:border-white transition-all transform hover:scale-110 shadow-lg" style={{ backgroundColor: color, borderColor: 'var(--bg-card)' }} />)}
-                           </div>
-                        </>
-                    ) : <p className="text-sm text-center" style={{color: 'var(--text-muted)'}}>Sube una imagen para ver la paleta de colores sugerida.</p>}
-                </div>
-            </div>
-            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
-        </div>
-    );
+const defaultState = {
+    theme: 'dark',
+    brandColor: '#009fdb',
+    isGrayAuto: true,
+    font: 'Poppins',
+    fxSeparator: ';',
 };
 
-const GradientGenerator = ({ onCopy, initialStart, initialEnd }) => {
-    const [startColor, setStartColor] = useState(initialStart);
-    const [endColor, setEndColor] = useState(initialEnd);
-    const [angle, setAngle] = useState(90);
-    const [type, setType] = useState('linear');
-
-    useEffect(() => {
-        setStartColor(initialStart);
-        setEndColor(initialEnd);
-    }, [initialStart, initialEnd]);
-    
-    const gradientCss = useMemo(() => {
-        return type === 'linear'
-            ? `linear-gradient(${angle}deg, ${startColor}, ${endColor})`
-            : `radial-gradient(circle, ${startColor}, ${endColor})`;
-    }, [startColor, endColor, angle, type]);
-
-    return (
-        <div className="p-6 rounded-xl border" style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
-            <h2 className="font-bold text-lg mb-4">Generador de Degradados</h2>
-            <div className="grid md:grid-cols-2 gap-6 items-center">
-                <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <ColorPickerInput label="Inicio" color={startColor} setColor={setStartColor} />
-                        <ColorPickerInput label="Fin" color={endColor} setColor={setEndColor} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted)'}}>Ángulo: {angle}°</label>
-                        <input type="range" min="0" max="360" value={angle} onChange={(e) => setAngle(e.target.value)}
-                               className="w-full range-slider" disabled={type !== 'linear'}/>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setType('linear')} className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors ${type === 'linear' ? 'text-white' : ''}`} style={{backgroundColor: type === 'linear' ? 'var(--action-primary-default)' : 'var(--action-secondary-default)', color: type === 'linear' ? '' : 'var(--text-default)'}}>Lineal</button>
-                        <button onClick={() => setType('radial')} className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors ${type === 'radial' ? 'text-white' : ''}`} style={{backgroundColor: type === 'radial' ? 'var(--action-primary-default)' : 'var(--action-secondary-default)', color: type === 'radial' ? '' : 'var(--text-default)'}}>Radial</button>
-                    </div>
-                </div>
-                <div className="space-y-3">
-                    <div className="w-full h-32 rounded-lg" style={{ background: gradientCss }}></div>
-                    <div className="relative">
-                        <pre className="font-mono text-sm whitespace-pre-wrap break-all p-3 pr-12 rounded-md" style={{backgroundColor: 'var(--bg-muted)', color: 'var(--text-muted)'}}>
-                            <code>background: {gradientCss};</code>
-                        </pre>
-                        <button onClick={() => onCopy(`background: ${gradientCss};`, '¡CSS de degradado copiado!')}
-                                className="absolute top-1/2 right-3 -translate-y-1/2 p-2 rounded-lg text-white" style={{backgroundColor: 'var(--action-primary-default)'}}>
-                            <Clipboard size={16}/>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- COMPONENTE PRINCIPAL ---
 function App() {
-  const [config, setConfig] = useState(defaultState);
-  const { brandShades, grayShades, stylePalette, accessibility, generatedCode, effectiveGrayColor } = useDesignSystem(config);
+  const [theme, setTheme] = useState(defaultState.theme);
+  const [brandColor, setBrandColor] = useState(defaultState.brandColor);
+  const [grayColor, setGrayColor] = useState('#5d757e');
+  const [isGrayAuto, setIsGrayAuto] = useState(defaultState.isGrayAuto);
+  
+  const [font, setFont] = useState(defaultState.font);
+  const [fxSeparator, setFxSeparator] = useState(defaultState.fxSeparator);
+  
+  const [brandShades, setBrandShades] = useState([]);
+  const [grayShades, setGrayShades] = useState([]);
+  
+  const [stylePalette, setStylePalette] = useState(null);
   
   const [notification, setNotification] = useState({ message: '', type: 'success' });
+  const [generatedCode, setGeneratedCode] = useState('');
   const [isCodeVisible, setIsCodeVisible] = useState(false);
+  const [isBrandPickerVisible, setIsBrandPickerVisible] = useState(false);
+  const [isGrayPickerVisible, setIsGrayPickerVisible] = useState(false);
+  const [isHelpVisible, setIsHelpVisible] = useState(false);
+  const [accessibility, setAccessibility] = useState({ btn: { ratio: 0, level: 'Fail'}, text: { ratio: 0, level: 'Fail'} });
+
   const importFileRef = useRef(null);
-  
-  useThemeEffect(stylePalette, config.font);
 
-  const handleCopy = (text, message) => { navigator.clipboard.writeText(text); showNotification(message); };
-  
-  const handleRandomTheme = () => {
-    let newBrandColor;
-    do { newBrandColor = tinycolor.random(); } while (!(tinycolor.readability(newBrandColor, '#FFF') > 4.5 || tinycolor.readability(newBrandColor, '#000') > 4.5));
-    setConfig(p => ({ ...p, isGrayAuto: true, brandColor: newBrandColor.toHexString() }));
-  };
+  useEffect(() => {
+    if (isGrayAuto) {
+      const harmonicGray = tinycolor(brandColor).desaturate(85).toHexString();
+      setGrayColor(harmonicGray);
+    }
+  }, [brandColor, isGrayAuto]);
 
-  const handleExport = () => {
-    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(config, null, 2))}`;
-    const link = document.createElement("a");
-    link.href = jsonString;
-    link.download = "mi-tema-de-diseno.json";
-    link.click();
-  };
-  const handleImport = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const imported = JSON.parse(e.target.result);
-        setConfig(prev => ({...prev, ...imported}));
-        showNotification('¡Tema importado con éxito!');
-      } catch (error) { showNotification('Error al leer el archivo de tema.', 'error'); }
+  useEffect(() => {
+    const newBrandShades = generateShades(brandColor);
+    const newGrayShades = generateGrayShades(grayColor);
+    
+    setBrandShades(newBrandShades);
+    setGrayShades(newGrayShades);
+
+    if (newBrandShades.length < 10 || newGrayShades.length < 10) return;
+
+    // Colores semánticos base (tonos puros)
+    const infoBase = '#0ea5e9'; // sky-500
+    const successBase = '#22c55e'; // green-500
+    const attentionBase = '#f97316'; // orange-500
+    const criticalBase = '#ef4444'; // red-500
+
+    // Mezcla los colores base con el gris del tema para crear armonía
+    const info = tinycolor.mix(infoBase, grayColor, 15).saturate(10).toHexString();
+    const success = tinycolor.mix(successBase, grayColor, 15).saturate(10).toHexString();
+    const attention = tinycolor.mix(attentionBase, grayColor, 15).saturate(10).toHexString();
+    const critical = tinycolor.mix(criticalBase, grayColor, 15).saturate(10).toHexString();
+
+
+    const currentPalette = {
+       backgroundColors: theme === 'dark' ? [
+        { name: 'Predeterminado', color: newGrayShades[0] }, { name: 'Tarjeta', color: newGrayShades[1] },
+        { name: 'Apagado', color: newGrayShades[2] }, { name: 'Sutil', color: tinycolor(newGrayShades[0]).lighten(5).toHexString() },
+      ] : [
+        { name: 'Predeterminado', color: newGrayShades[9] }, { name: 'Tarjeta', color: '#FFFFFF' },
+        { name: 'Apagado', color: newGrayShades[8] }, { name: 'Sutil', color: newGrayShades[8] },
+      ],
+      foregroundColors: theme === 'dark' ? [
+        { name: 'Predeterminado', color: newGrayShades[9] }, { name: 'Apagado', color: newGrayShades[6] },
+        { name: 'Sutil', color: newGrayShades[4] },
+      ] : [
+        { name: 'Predeterminado', color: newGrayShades[0] }, { name: 'Apagado', color: newGrayShades[3] },
+        { name: 'Sutil', color: newGrayShades[5] },
+      ],
+      borderColors: theme === 'dark' ? [
+        { name: 'Predeterminado', color: newGrayShades[2] }, { name: 'Fuerte', color: newGrayShades[4] },
+      ] : [
+        { name: 'Predeterminado', color: newGrayShades[7] }, { name: 'Fuerte', color: newGrayShades[5] },
+      ],
+      actionColors: [
+        { name: 'Primario', color: newBrandShades[3] }, { name: 'PrimarioFlotante', color: newBrandShades[4] },
+        { name: 'Secundario', color: newGrayShades[3] }, { name: 'SecundarioFlotante', color: newGrayShades[4] },
+      ],
+      decorateColors: [
+        { name: 'Azul1', color: info }, { name: 'Azul2', color: tinycolor(info).lighten(15).toHexString() },
+        { name: 'Verde1', color: success }, { name: 'Verde2', color: tinycolor(success).lighten(15).toHexString() },
+        { name: 'Neutro1', color: newGrayShades[5] }, { name: 'Neutro2', color: newGrayShades[4] },
+        { name: 'Naranja1', color: attention }, { name: 'Naranja2', color: tinycolor(attention).lighten(15).toHexString() },
+      ],
     };
-    reader.readAsText(file);
-  };
-  const handleReset = () => { setConfig(defaultState); showNotification("Tema reiniciado a los valores por defecto."); };
+    
+    currentPalette.fullActionColors = [
+        { name: 'Primario', color: newBrandShades[2] }, { name: 'PrimarioFlotante', color: newBrandShades[3] },
+        { name: 'PrimarioPresionado', color: newBrandShades[4] }, { name: 'Secundario', color: newGrayShades[4] },
+        { name: 'SecundarioPresionado', color: newGrayShades[5] }, { name: 'Critico', color: critical },
+        { name: 'CriticoFlotante', color: tinycolor(critical).lighten(10).toHexString() }, { name: 'CriticoPresionado', color: tinycolor(critical).darken(10).toHexString() },
+    ];
+    currentPalette.fullBackgroundColors = theme === 'dark' ? [
+        { name: 'Predeterminado', color: newGrayShades[0] }, { name: 'Apagado', color: newGrayShades[1] },
+        { name: 'Debil', color: newGrayShades[2] }, { name: 'Fuerte', color: newGrayShades[9] },
+        { name: 'Inverso', color: newGrayShades[9] }, { name: 'InfoDebil', color: tinycolor(info).darken(25).toHexString() },
+        { name: 'CriticoDebil', color: tinycolor(critical).darken(25).toHexString() }, { name: 'AtencionDebil', color: tinycolor(attention).darken(25).toHexString() },
+      ] : [
+        { name: 'Predeterminado', color: '#FFFFFF' }, { name: 'Apagado', color: newGrayShades[8] },
+        { name: 'Debil', color: newGrayShades[7] }, { name: 'Fuerte', color: newGrayShades[0] },
+        { name: 'Inverso', color: newGrayShades[0] }, { name: 'InfoDebil', color: tinycolor(info).lighten(25).toHexString() },
+        { name: 'CriticoDebil', color: tinycolor(critical).lighten(25).toHexString() }, { name: 'AtencionDebil', color: tinycolor(attention).lighten(25).toHexString() },
+      ];
+    currentPalette.fullForegroundColors = theme === 'dark' ? [
+        { name: 'Predeterminado', color: newGrayShades[9] }, { name: 'Apagado', color: newGrayShades[6] },
+        { name: 'Debil', color: newGrayShades[4] }, { name: 'Fuerte', color: newGrayShades[9] },
+        { name: 'Inverso', color: newGrayShades[0] }, { name: 'Info', color: info },
+        { name: 'Critico', color: critical }, { name: 'Atencion', color: attention },
+        { name: 'Exito', color: success }, { name: 'SobreAccento', color: '#FFFFFF' },
+      ] : [
+        { name: 'Predeterminado', color: newGrayShades[0] }, { name: 'Apagado', color: newGrayShades[3] },
+        { name: 'Debil', color: newGrayShades[5] }, { name: 'Fuerte', color: newGrayShades[0] },
+        { name: 'Inverso', color: newGrayShades[9] }, { name: 'Info', color: info },
+        { name: 'Critico', color: critical }, { name: 'Atencion', color: attention },
+        { name: 'Exito', color: success }, { name: 'SobreAccento', color: '#FFFFFF' },
+      ];
+    currentPalette.fullBorderColors = theme === 'dark' ? [
+        { name: 'Predeterminado', color: newGrayShades[2] }, { name: 'Fuerte', color: newGrayShades[4] },
+        { name: 'Inverso', color: newGrayShades[0] }, { name: 'InfoFuerte', color: info },
+        { name: 'CriticoFuerte', color: critical }, { name: 'AtencionFuerte', color: attention },
+        { name: 'ExitoFuerte', color: success },
+      ] : [
+        { name: 'Predeterminado', color: newGrayShades[7] }, { name: 'Fuerte', color: newGrayShades[5] },
+        { name: 'Inverso', color: newGrayShades[9] }, { name: 'InfoFuerte', color: info },
+        { name: 'CriticoFuerte', color: critical }, { name: 'AtencionFuerte', color: attention },
+        { name: 'ExitoFuerte', color: success },
+      ];
+    
+    setStylePalette(currentPalette);
+    
+    const root = document.documentElement;
+    const bgColor = currentPalette.backgroundColors.find(c=>c.name==='Predeterminado').color;
+    const textColor = currentPalette.foregroundColors.find(c=>c.name==='Predeterminado').color;
+    root.style.setProperty('--bg-default', bgColor);
+    root.style.setProperty('--bg-card', currentPalette.backgroundColors.find(c=>c.name==='Tarjeta').color);
+    root.style.setProperty('--bg-muted', currentPalette.backgroundColors.find(c=>c.name==='Apagado').color);
+    root.style.setProperty('--text-default', textColor);
+    root.style.setProperty('--text-muted', currentPalette.foregroundColors.find(c=>c.name==='Apagado').color);
+    root.style.setProperty('--border-default', currentPalette.borderColors.find(c=>c.name==='Predeterminado').color);
+    root.style.setProperty('--border-strong', currentPalette.borderColors.find(c=>c.name==='Fuerte').color);
+    root.style.setProperty('--action-primary-default', currentPalette.actionColors.find(c=>c.name==='Primario').color);
+    root.style.setProperty('--action-primary-hover', currentPalette.actionColors.find(c=>c.name==='PrimarioFlotante').color);
+    root.style.setProperty('--action-secondary-default', currentPalette.actionColors.find(c=>c.name==='Secundario').color);
+    root.style.setProperty('--action-secondary-hover', currentPalette.actionColors.find(c=>c.name==='SecundarioFlotante').color);
+    
+    // Chequeos de Accesibilidad
+    const btnContrast = tinycolor.readability(currentPalette.actionColors.find(c=>c.name==='Primario').color, '#FFFFFF');
+    const textContrast = tinycolor.readability(textColor, bgColor);
+    
+    let btnLevel = 'Fallido', textLevel = 'Fallido';
+    if (btnContrast >= 7) btnLevel = 'AAA'; else if (btnContrast >= 4.5) btnLevel = 'AA';
+    if (textContrast >= 7) textLevel = 'AAA'; else if (textContrast >= 4.5) textLevel = 'AA';
+
+    setAccessibility({ 
+        btn: { ratio: btnContrast.toFixed(2), level: btnLevel },
+        text: { ratio: textContrast.toFixed(2), level: textLevel } 
+    });
+
+    setGeneratedCode(generatePowerFxCode({
+        brandShades: newBrandShades,
+        grayShades: newGrayShades,
+        stylePalette: {
+            backgroundColors: currentPalette.fullBackgroundColors,
+            actionColors: currentPalette.fullActionColors,
+            foregroundColors: currentPalette.fullForegroundColors,
+            borderColors: currentPalette.fullBorderColors,
+            decorateColors: currentPalette.decorateColors,
+        },
+        theme, brandColor, grayColor, font
+    }, fxSeparator));
+
+  }, [brandColor, grayColor, theme, font, fxSeparator]);
+  
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification({ message: '', type: 'success' }), 3000);
   };
   
-  if (!stylePalette) return <div className="min-h-screen bg-gray-900 flex items-center justify-center"><div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin" style={{borderColor: config.brandColor}}></div></div>;
+  const handleCopy = (text, message) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    showNotification(message, 'success');
+  };
   
-  const { brandColor, grayColor, isGrayAuto, theme, font, fxSeparator } = config;
+  const handleRandomTheme = () => {
+    let newBrandColor;
+    let isAccessible = false;
+    while (!isAccessible) {
+        newBrandColor = tinycolor.random();
+        const contrastWhite = tinycolor.readability('#FFF', newBrandColor);
+        if (contrastWhite > 4.5) {
+            isAccessible = true;
+        }
+    }
+    setIsGrayAuto(true);
+    setBrandColor(newBrandColor.toHexString());
+  };
+
+  const handleExport = () => {
+    const themeData = { brandColor, grayColor, font, theme, isGrayAuto, fxSeparator };
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(themeData, null, 2))}`;
+    const link = document.createElement("a");
+    link.href = jsonString;
+    link.download = "mi-tema-de-diseno.json";
+    link.click();
+  };
+
+  const handleImport = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedTheme = JSON.parse(e.target.result);
+          if (importedTheme.brandColor && importedTheme.font) {
+            setBrandColor(importedTheme.brandColor);
+            setGrayColor(importedTheme.grayColor);
+            setFont(importedTheme.font);
+            setTheme(importedTheme.theme);
+            setIsGrayAuto(importedTheme.isGrayAuto);
+            setFxSeparator(importedTheme.fxSeparator || ';');
+            showNotification('¡Tema importado con éxito!');
+          } else {
+            showNotification('Archivo de tema inválido.', 'error');
+          }
+        } catch (error) {
+          console.error("Error al leer el archivo de tema:", error);
+          showNotification('Error al leer el archivo de tema.', 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleReset = () => {
+    setTheme(defaultState.theme);
+    setBrandColor(defaultState.brandColor);
+    setIsGrayAuto(defaultState.isGrayAuto);
+    setFont(defaultState.font);
+    setFxSeparator(defaultState.fxSeparator);
+    showNotification("Tema reiniciado a los valores por defecto.");
+  };
+  
+  if (!stylePalette) {
+    return (
+        <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-white font-segoe">
+            <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-purple-500"></div>
+            <p className="mt-4 text-lg">Generando sistema de diseño...</p>
+        </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen p-4 sm:p-8 transition-colors duration-300" style={{backgroundColor: 'var(--bg-default)', color: 'var(--text-default)', fontFamily: availableFonts[font]}}>
+    <div className={`min-h-screen p-4 sm:p-8 transition-colors duration-300`} style={{ fontFamily: availableFonts[font], backgroundColor: 'var(--bg-default)', color: 'var(--text-default)'}}>
       <style>{`
-        :root { --brand-color: ${brandColor}; }
-        .react-colorful { width: 100%; height: 150px; border-radius: 8px; border: 1px solid var(--border-default); background-color: var(--bg-card); }
-        .react-colorful__saturation { border-radius: 8px 8px 0 0; }
-        .react-colorful__hue, .react-colorful__alpha { height: 20px; border-radius: 0 0 8px 8px; }
-        .react-colorful__pointer { width: 20px; height: 20px; }
-        .range-slider { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; background: var(--bg-muted); outline: none; opacity: 0.7; transition: opacity .2s; }
-        .range-slider:hover { opacity: 1; }
-        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--action-primary-default); cursor: pointer; border: 2px solid var(--bg-card); }
-        .range-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--action-primary-default); cursor: pointer; border: 2px solid var(--bg-card); }
+        .react-colorful {
+          width: 100%;
+          height: 150px;
+          border-radius: 8px;
+          border: 1px solid var(--border-default);
+          background-color: var(--bg-card);
+        }
+        .react-colorful__saturation {
+          border-radius: 8px 8px 0 0;
+        }
+        .react-colorful__hue, .react-colorful__alpha {
+          height: 20px;
+          border-radius: 0 0 8px 8px;
+        }
+        .react-colorful__pointer {
+          width: 20px;
+          height: 20px;
+        }
       `}</style>
       
-      <header className="relative flex justify-between items-center mb-8 max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold"><span style={{color: 'var(--action-primary-default)'}}>Mi</span>Sistema</h1>
-        <div className="flex items-center gap-2">
+      {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
+      
+      <header className="relative flex justify-center items-center mb-8">
+        <div className="absolute left-0 font-bold text-lg" style={{ color: 'var(--text-default)'}}>
+          <span style={{ color: 'var(--action-primary-default)'}}>Mi</span>Sistema
+        </div>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-default)'}}>
+          Sistema de diseño
+        </h1>
+        <div className="absolute right-0 flex items-center gap-2">
             <input type="file" ref={importFileRef} onChange={handleImport} accept=".json" className="hidden"/>
-            <button title="Reiniciar" onClick={handleReset} className="p-2 rounded-lg" style={{backgroundColor: 'var(--bg-muted)'}}><RefreshCcw size={16}/></button>
-            <button title="Importar" onClick={() => importFileRef.current.click()} className="p-2 rounded-lg" style={{backgroundColor: 'var(--bg-muted)'}}><Upload size={16}/></button>
-            <button title="Exportar" onClick={handleExport} className="p-2 rounded-lg" style={{backgroundColor: 'var(--bg-muted)'}}><Download size={16}/></button>
+            <button title="Reiniciar Tema" onClick={handleReset} className="text-sm font-medium p-2 rounded-lg" style={{ backgroundColor: 'var(--action-secondary-default)', color: 'var(--text-default)'}}><RefreshCcw size={16}/></button>
+            <button title="Importar Tema" onClick={() => importFileRef.current.click()} className="text-sm font-medium p-2 rounded-lg" style={{ backgroundColor: 'var(--action-secondary-default)', color: 'var(--text-default)'}}><Upload size={16}/></button>
+            <button title="Exportar Tema" onClick={handleExport} className="text-sm font-medium p-2 rounded-lg" style={{ backgroundColor: 'var(--action-secondary-default)', color: 'var(--text-default)'}}><Download size={16}/></button>
+            <button title="Ayuda" onClick={() => setIsHelpVisible(true)} className="text-sm font-medium p-2 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--action-secondary-default)', color: 'var(--text-default)'}}><HelpCircle size={16}/></button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto space-y-8">
-        <div className="p-4 rounded-xl border flex flex-wrap items-center justify-center gap-x-6 gap-y-4" style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
-            <div className="flex items-center gap-2">
-                <label className="text-sm" style={{color: 'var(--text-muted)'}}>Fuente:</label>
-                <select value={font} onChange={(e) => setConfig(p => ({...p, font: e.target.value}))} className="font-semibold px-2 py-1 rounded-md border" style={{backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}>
-                    {Object.keys(availableFonts).map(f => (<option key={f} value={f}>{f}</option>))}
-                </select>
-            </div>
-            <ColorPickerInput label="Color de Marca" color={brandColor} setColor={c => setConfig(p => ({...p, brandColor: c}))} />
-            <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2"><Wand2 size={16} style={{color: 'var(--text-muted)'}}/><label className="text-sm font-medium" style={{color: 'var(--text-muted)'}}>Gris Automático</label></div>
-                <button type="button" role="switch" aria-checked={isGrayAuto} onClick={() => setConfig(p => ({...p, isGrayAuto: !p.isGrayAuto}))} className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent`} style={{backgroundColor: isGrayAuto ? 'var(--action-primary-default)' : 'var(--bg-muted)'}}>
-                    <span className={`${isGrayAuto ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition`} />
-                </button>
-            </div>
-            <div className={`transition-opacity ${isGrayAuto ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}><ColorPickerInput label="Gris Base" color={grayColor} setColor={c => setConfig(p => ({...p, grayColor: c}))} /></div>
-            <button onClick={handleRandomTheme} className="text-sm font-medium py-2 px-4 rounded-lg text-white hover:opacity-90 flex items-center gap-2" style={{ background: `linear-gradient(to right, ${brandColor}, #e11d48)`}}><Sparkles size={16} /> Aleatorio</button>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setConfig(p => ({...p, theme: 'light'}))} className={`text-sm font-medium py-2 px-4 rounded-lg`} style={{backgroundColor: theme === 'light' ? 'var(--action-primary-default)' : 'var(--action-secondary-default)', color: theme === 'light' ? accessibility.btnFg : 'var(--text-default)'}}>Modo Claro</button>
-              <button onClick={() => setConfig(p => ({...p, theme: 'dark'}))} className={`text-sm font-medium py-2 px-4 rounded-lg`} style={{backgroundColor: theme === 'dark' ? 'var(--action-primary-default)' : 'var(--action-secondary-default)', color: theme === 'dark' ? accessibility.btnFg : 'var(--text-default)'}}>Modo Oscuro</button>
-            </div>
-        </div>
-        
-        <ImagePaletteExtractor onColorSelect={(color) => setConfig(p => ({...p, brandColor: color, isGrayAuto: true}))} showNotification={showNotification} />
-        
-        <div className="p-6 rounded-xl border" style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
-          <h2 className="font-bold text-lg mb-4">Vista Previa de Componentes</h2>
+      <main>
+        <section className="p-6 rounded-xl border mb-8" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
+          <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text-default)'}}>Vista Previa de Componentes</h2>
           <div className="flex flex-wrap items-center gap-6">
               <div className="flex-1 space-y-4 min-w-[200px]">
-                  <button className="w-full font-bold py-2 px-4 rounded-lg transition-colors" style={{ backgroundColor: 'var(--action-primary-default)', color: accessibility.btnFg }}>Botón Primario</button>
-                  <button className="w-full font-bold py-2 px-4 rounded-lg transition-colors" style={{ backgroundColor: 'var(--action-secondary-default)', color: 'var(--text-default)', border: `1px solid var(--border-strong)` }}>Botón Secundario</button>
+                  <button className="w-full text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                      style={{ backgroundColor: 'var(--action-primary-default)'}}
+                      onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--action-primary-hover)'}
+                      onMouseOut={e => e.currentTarget.style.backgroundColor = 'var(--action-primary-default)'}>
+                      Botón Primario
+                  </button>
+                  <button className="w-full font-bold py-2 px-4 rounded-lg transition-colors"
+                      style={{ backgroundColor: 'var(--action-secondary-default)', color: 'var(--text-default)', border: '1px solid var(--border-strong)'}}
+                      onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--action-secondary-hover)'}
+                      onMouseOut={e => e.currentTarget.style.backgroundColor = 'var(--action-secondary-default)'}>
+                      Botón Secundario
+                  </button>
               </div>
-              <div className="flex-1 p-4 rounded-lg border min-w-[250px] space-y-2" style={{backgroundColor: 'var(--bg-muted)', borderColor: 'var(--border-strong)'}}>
-                  <h3 className="font-bold mb-2">Chequeo de Accesibilidad</h3>
-                   {Object.entries(accessibility).filter(([k]) => k !== 'btnFg').map(([key, value]) => (<div key={key} className="flex items-center gap-2"><span className={`text-xs font-bold p-1 rounded w-12 text-center ${value.level === 'Fallido' ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}`}>{value.level}</span><span className="text-sm" style={{color: 'var(--text-muted)'}}>{key === 'btn' ? 'Botón' : 'Texto'} ({value.ratio}:1)</span></div>))}
+              <div className="flex-1 p-4 rounded-lg border min-w-[250px] space-y-2" style={{ backgroundColor: 'var(--bg-muted)', borderColor: 'var(--border-strong)'}}>
+                  <h3 className="font-bold mb-2" style={{ color: 'var(--text-default)'}}>Chequeo de Accesibilidad</h3>
+                   <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold p-1 rounded w-12 text-center" style={{
+                      backgroundColor: accessibility.btn.level === 'Fallido' ? '#fecaca' : '#bbf7d0',
+                      color: accessibility.btn.level === 'Fallido' ? '#991b1b' : '#166534'
+                    }}>{accessibility.btn.level}</span>
+                    <span className="text-sm" style={{ color: 'var(--text-muted)'}}>Botón ({accessibility.btn.ratio}:1)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold p-1 rounded w-12 text-center" style={{
+                      backgroundColor: accessibility.text.level === 'Fallido' ? '#fecaca' : '#bbf7d0',
+                      color: accessibility.text.level === 'Fallido' ? '#991b1b' : '#166534'
+                    }}>{accessibility.text.level}</span>
+                    <span className="text-sm" style={{ color: 'var(--text-muted)'}}>Texto ({accessibility.text.ratio}:1)</span>
+                  </div>
               </div>
           </div>
-        </div>
-        
-        <GradientGenerator onCopy={handleCopy} initialStart={brandColor} initialEnd={stylePalette.decorateColors[0].color} />
+        </section>
 
-        <div className="grid md:grid-cols-2 gap-8">
-           <div className="p-6 rounded-xl space-y-4" style={{backgroundColor: '#FFFFFF', color: '#000000'}}>
-            <h2 className="font-bold text-gray-900">Modo Claro</h2>
-            <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(c) => handleCopy(c, `Tono ${c.toUpperCase()} copiado!`)} themeOverride="light"/>
-            <ColorPalette title="Escala de Grises" color={effectiveGrayColor} hex={effectiveGrayColor} shades={grayShades} onShadeCopy={(c) => handleCopy(c, `Tono ${c.toUpperCase()} copiado!`)} themeOverride="light"/>
+        <section className="space-y-6 mb-8">
+           <div className="p-6 rounded-xl border bg-white">
+            <h2 className="font-bold mb-2 text-gray-900">Modo Claro</h2>
+            <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="light"/>
+            <ColorPalette title="Escala de Grises" color={grayColor} hex={grayColor} shades={grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="light"/>
           </div>
-           <div className="border p-6 rounded-xl space-y-4" style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
-             <h2 className="font-bold">Modo Oscuro</h2>
-            <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(c) => handleCopy(c, `Tono ${c.toUpperCase()} copiado!`)} themeOverride="dark"/>
-            <ColorPalette title="Escala de Grises" color={effectiveGrayColor} hex={effectiveGrayColor} shades={grayShades} onShadeCopy={(c) => handleCopy(c, `Tono ${c.toUpperCase()} copiado!`)} themeOverride="dark"/>
+           <div className="p-6 rounded-xl border bg-[#1E1E2A]">
+             <h2 className="font-bold mb-2 text-white">Modo Oscuro</h2>
+            <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
+            <ColorPalette title="Escala de Grises" color={grayColor} hex={grayColor} shades={grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
           </div>
-        </div>
+        </section>
 
-        <div className="p-6 rounded-xl border" style={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
-            <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
-                <h3 className="font-bold text-lg">Código Power Fx</h3>
+        <section className="p-4 rounded-xl mb-8 border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
+            <div className="flex flex-wrap justify-between items-center mb-2 gap-4">
+                <h3 className="font-bold text-lg" style={{ color: 'var(--text-default)'}}>Código Power Fx</h3>
                 <div className='flex items-center gap-4'>
                   <div className="flex items-center gap-2">
-                    <label className="text-sm" style={{color: 'var(--text-muted)'}}>Separador:</label>
-                    <select value={fxSeparator} onChange={(e) => setConfig(p => ({...p, fxSeparator: e.target.value}))}
-                        className="font-semibold px-2 py-1 rounded-md border" style={{backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}>
-                        <option value=";">;</option> <option value=",">,</option> <option value=";;">;;</option>
+                    <label className="text-sm" style={{ color: 'var(--text-muted)'}} htmlFor="fxSeparator">Separador:</label>
+                    <select
+                        id="fxSeparator"
+                        value={fxSeparator}
+                        onChange={(e) => setFxSeparator(e.target.value)}
+                        className="font-semibold px-2 py-1 rounded-md border"
+                        style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}
+                    >
+                        <option value=";">;</option>
+                        <option value=",">,</option>
+                        <option value=";;">;;</option>
                     </select>
                   </div>
-                  <button onClick={() => setIsCodeVisible(!isCodeVisible)} className="text-sm font-medium py-2 px-4 rounded-lg" style={{backgroundColor: 'var(--action-secondary-default)', color: 'var(--text-default)'}}>
+                  <button
+                      onClick={() => setIsCodeVisible(!isCodeVisible)}
+                      className="text-sm font-medium py-1 px-3 rounded-lg transition-colors"
+                      style={{ backgroundColor: 'var(--action-secondary-default)', color: 'var(--text-default)'}}
+                      onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--action-secondary-hover)'}
+                      onMouseOut={e => e.currentTarget.style.backgroundColor = 'var(--action-secondary-default)'}
+                  >
                       {isCodeVisible ? 'Ocultar' : 'Mostrar'} Código
                   </button>
                 </div>
             </div>
             {isCodeVisible && (
-                <div className="relative">
-                    <pre className="font-mono text-sm p-4 rounded-md max-h-96 overflow-auto" style={{backgroundColor: 'var(--bg-muted)', color: 'var(--text-muted)'}}><code>{generatedCode}</code></pre>
-                    <button onClick={() => handleCopy(generatedCode, '¡Código Power Fx copiado!')} className="absolute top-3 right-3 p-2 rounded-lg text-white" style={{backgroundColor: 'var(--action-primary-default)'}}><Clipboard size={16}/></button>
+                <div className="relative mt-4">
+                    <pre className="font-mono text-sm whitespace-pre-wrap break-all p-4 rounded-md max-h-96 overflow-auto" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-muted)'}}>
+                        <code>{generatedCode}</code>
+                    </pre>
+                    <button
+                        onClick={() => handleCopy(generatedCode, '¡Código Power Fx copiado!')}
+                        className="absolute top-3 right-3 text-sm font-medium p-2 rounded-lg text-white transition-colors"
+                        style={{ backgroundColor: 'var(--action-primary-default)'}}
+                        onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--action-primary-hover)'}
+                        onMouseOut={e => e.currentTarget.style.backgroundColor = 'var(--action-primary-default)'}
+                    >
+                        <Clipboard size={16}/>
+                    </button>
                 </div>
             )}
-        </div>
+        </section>
 
+        <section className="p-4 rounded-xl mb-8 flex flex-wrap items-center justify-around gap-4 border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
+           <div className="flex items-center gap-2">
+            <label className="text-sm" style={{ color: 'var(--text-muted)'}} htmlFor="fontSelector">Fuente:</label>
+            <select
+                id="fontSelector"
+                value={font}
+                onChange={(e) => setFont(e.target.value)}
+                className="font-semibold px-2 py-1 rounded-md border"
+                style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}
+            >
+                {Object.keys(availableFonts).map(fontName => (
+                    <option key={fontName} value={fontName}>{fontName}</option>
+                ))}
+            </select>
+          </div>
+          <div className="relative flex items-center gap-2">
+            <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Color de Marca:</label>
+            <div className="flex items-center rounded-md" style={{ backgroundColor: 'var(--bg-muted)'}}>
+                <div
+                    className="w-7 h-7 rounded-l-md cursor-pointer border-r"
+                    style={{ backgroundColor: brandColor, borderColor: 'var(--border-strong)' }}
+                    onClick={() => setIsBrandPickerVisible(!isBrandPickerVisible)}
+                />
+                 <HexColorInput 
+                    color={brandColor} 
+                    onChange={setBrandColor}
+                    className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none"
+                    style={{ color: 'var(--text-default)'}}
+                    prefixed
+                />
+            </div>
+            {isBrandPickerVisible && (
+                <div className="absolute z-10 top-full mt-2 left-0 w-56">
+                    <div className="fixed inset-0" onClick={() => setIsBrandPickerVisible(false)} />
+                    <HexColorPicker color={brandColor} onChange={setBrandColor} />
+                </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+                <Wand2 size={16} style={{ color: 'var(--text-muted)'}}/>
+                <label className="text-sm font-medium" style={{ color: 'var(--text-muted)'}}>Gris Automático</label>
+            </div>
+            <Switch checked={isGrayAuto} onCheckedChange={setIsGrayAuto} />
+          </div>
+          <div className={`relative flex items-center gap-2 transition-opacity ${isGrayAuto ? 'opacity-50' : 'opacity-100'}`}>
+            <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Escala de Grises:</label>
+            <div className="flex items-center rounded-md" style={{ backgroundColor: 'var(--bg-muted)'}}>
+                <div
+                    className={`w-7 h-7 rounded-l-md border-r ${isGrayAuto ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                    style={{ backgroundColor: grayColor, borderColor: 'var(--border-strong)' }}
+                    onClick={() => !isGrayAuto && setIsGrayPickerVisible(!isGrayPickerVisible)}
+                />
+                 <HexColorInput 
+                    color={grayColor} 
+                    onChange={setGrayColor}
+                    className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none"
+                    style={{ color: 'var(--text-default)'}}
+                    prefixed
+                    disabled={isGrayAuto}
+                />
+            </div>
+            {isGrayPickerVisible && !isGrayAuto && (
+                <div className="absolute z-10 top-full mt-2 right-0 w-56">
+                    <div className="fixed inset-0" onClick={() => setIsGrayPickerVisible(false)} />
+                    <HexColorPicker color={grayColor} onChange={setGrayColor} />
+                </div>
+            )}
+          </div>
+           <button 
+                onClick={handleRandomTheme}
+                className="text-sm font-medium py-2 px-4 rounded-lg transition-colors text-white hover:opacity-90 flex items-center gap-2"
+                style={{ background: 'linear-gradient(to right, var(--action-primary-default), #e11d48)'}}
+              >
+                <Sparkles size={16} /> Aleatorio
+            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setTheme('light')}
+                className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors`}
+                style={{ 
+                    backgroundColor: theme === 'light' ? 'var(--action-primary-default)' : 'var(--action-secondary-default)',
+                    color: theme === 'light' ? 'white' : 'var(--text-default)'
+                }}
+              >
+                Modo Claro
+              </button>
+              <button 
+                onClick={() => setTheme('dark')}
+                className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors`}
+                style={{ 
+                    backgroundColor: theme === 'dark' ? 'var(--action-primary-default)' : 'var(--action-secondary-default)',
+                    color: theme === 'dark' ? 'white' : 'var(--text-default)'
+                }}
+              >
+                Modo Oscuro
+              </button>
+            </div>
+        </section>
+        
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+           <StyleCard title="Tipografía">
+            {Object.entries(displayStylesConfig).map(([name, styles]) => (
+              <div key={name} className="mb-2 truncate">
+                  <span style={{ fontSize: styles.fontSize, fontWeight: styles.fontWeight, color: 'var(--text-muted)' }}>{name}</span>
+              </div>
+            ))}
+          </StyleCard>
+          <StyleCard title="Fondos">{stylePalette.fullBackgroundColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
+          <StyleCard title="Textos">{stylePalette.fullForegroundColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
+          <StyleCard title="Bordes">{stylePalette.fullBorderColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
+          <StyleCard title="Acciones">{stylePalette.fullActionColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
+          <StyleCard title="Decorativos">{stylePalette.decorateColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
+        </section>
       </main>
 
-      <footer className="text-center mt-12 pt-8 border-t max-w-7xl mx-auto" style={{borderColor: 'var(--border-default)', color: 'var(--text-muted)'}}><p className="text-sm">Creado con ❤️ por ti y la asistencia de IA.</p></footer>
+      <footer className="text-center mt-12 pt-8 border-t" style={{ borderColor: 'var(--border-default)', color: 'var(--text-muted)'}}>
+        <p className="text-sm">Creado con ❤️ por ti y la asistencia de IA. Inspirado en el sistema de diseño de Dionny Gómez.</p>
+        <p className="text-xs mt-1">Un proyecto de código abierto para la comunidad de Power Apps.</p>
+      </footer>
 
-      {notification.message && (<div className={`fixed bottom-5 right-5 text-white text-sm font-bold py-2 px-4 rounded-lg shadow-lg flex items-center gap-2 ${notification.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}><AlertCircle size={16}/> {notification.message}</div>)}
+      {notification.message && (
+        <div 
+          className="fixed bottom-5 right-5 text-white text-sm font-bold py-2 px-4 rounded-lg shadow-lg flex items-center gap-2" 
+          style={{ backgroundColor: notification.type === 'error' ? '#EF4444' : '#10B981'}}
+        >
+          {notification.type === 'error' ? <AlertCircle size={16}/> : <Check size={16}/>} 
+          {notification.message}
+        </div>
+      )}
     </div>
   );
 }
