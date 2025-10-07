@@ -5,31 +5,51 @@ import { HexColorPicker, HexColorInput } from 'react-colorful';
 
 // --- Funciones de Utilidad de Colores (lógica interna en inglés) ---
 
+// Función de generación de sombras corregida
 const generateShades = (hex) => {
   if (!tinycolor(hex).isValid()) return Array(10).fill('#cccccc');
   const baseColor = tinycolor(hex);
   const shades = [];
-  shades.push(baseColor.clone().darken(15).toHexString());
-  shades.push(baseColor.clone().darken(7).toHexString());
-  shades.push(baseColor.clone().toHexString());
-  shades.push(baseColor.clone().lighten(8).toHexString());
-  shades.push(baseColor.clone().lighten(16).toHexString());
-  shades.push(baseColor.clone().lighten(24).toHexString());
-  shades.push(baseColor.clone().lighten(32).toHexString());
-  shades.push(baseColor.clone().lighten(40).toHexString());
-  shades.push(baseColor.clone().lighten(48).toHexString());
-  shades.push(baseColor.clone().lighten(56).toHexString());
+  
+  // Genera 4 tonos más oscuros, del más oscuro al menos oscuro
+  const darkSteps = [32, 24, 16, 8];
+  for (const step of darkSteps) {
+      shades.push(baseColor.clone().darken(step).toHexString());
+  }
+
+  // Añade el color base en la 5ta posición (índice 4)
+  shades.push(baseColor.toHexString());
+
+  // Genera 5 tonos más claros, del menos claro al más claro
+  const lightSteps = [8, 16, 24, 32, 40];
+  for (const step of lightSteps) {
+      shades.push(baseColor.clone().lighten(step).toHexString());
+  }
+  
   return shades;
 };
 
+// Función de generación de grises corregida
 const generateGrayShades = (hex) => {
     if (!tinycolor(hex).isValid()) return Array(10).fill('#cccccc');
     const baseColor = tinycolor(hex);
     const shades = [];
-    const darkGray = baseColor.clone().darken(30);
-    for (let i = 0; i < 10; i++) {
-       shades.push(darkGray.clone().lighten(i * 9).toHexString());
+    
+    // Genera 4 tonos más oscuros, del más oscuro al menos oscuro
+    const darkSteps = [32, 24, 16, 8];
+    for (const step of darkSteps) {
+        shades.push(baseColor.clone().darken(step).toHexString());
     }
+
+    // Añade el color base en la 5ta posición (índice 4)
+    shades.push(baseColor.toHexString());
+
+    // Genera 5 tonos más claros, del menos claro al más claro
+    const lightSteps = [8, 16, 24, 32, 40];
+    for (const step of lightSteps) {
+        shades.push(baseColor.clone().lighten(step).toHexString());
+    }
+    
     return shades;
 }
 
@@ -97,8 +117,8 @@ const ColorPalette = ({ title, color, hex, shades, onShadeCopy, themeOverride })
     <div className="flex items-center mb-2">
       <div className="w-10 h-10 rounded-md mr-3 border" style={{ backgroundColor: color, borderColor: themeOverride === 'light' ? '#E5E7EB' : '#4B5563' }}></div>
       <div>
-        <p className="text-sm font-medium" style={{ color: themeOverride === 'light' ? '#111827' : '#F9FAFB' }}>{title}</p>
-        <p className="text-xs font-mono" style={{ color: themeOverride === 'light' ? '#6B7280' : '#9CA3AF' }}>{hex.toUpperCase()}</p>
+        <p className={`text-sm font-medium ${themeOverride === 'light' ? 'text-gray-900' : 'text-gray-50'}`}>{title}</p>
+        <p className={`text-xs font-mono ${themeOverride === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>{hex.toUpperCase()}</p>
       </div>
     </div>
     <div className="flex rounded-md overflow-hidden h-8 relative group">
@@ -112,7 +132,7 @@ const ColorPalette = ({ title, color, hex, shades, onShadeCopy, themeOverride })
         />
       ))}
     </div>
-     <div className="flex text-xs font-mono px-1" style={{ color: themeOverride === 'light' ? '#6B7280' : '#9CA3AF' }}>
+     <div className={`flex text-xs font-mono px-1 ${themeOverride === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
         {Array.from({ length: 10 }).map((_, index) => (
             <div key={index} className="flex-1 text-center">T{index * 100 === 0 ? '0' : index * 100}</div>
         ))}
@@ -223,6 +243,9 @@ function App() {
   const [isHelpVisible, setIsHelpVisible] = useState(false);
   const [accessibility, setAccessibility] = useState({ btn: { ratio: 0, level: 'Fail'}, text: { ratio: 0, level: 'Fail'} });
 
+  const [usePureWhiteBg, setUsePureWhiteBg] = useState(false);
+  const [usePureBlackBg, setUsePureBlackBg] = useState(false);
+
   const importFileRef = useRef(null);
 
   useEffect(() => {
@@ -253,7 +276,6 @@ function App() {
     const attention = tinycolor.mix(attentionBase, grayColor, 15).saturate(10).toHexString();
     const critical = tinycolor.mix(criticalBase, grayColor, 15).saturate(10).toHexString();
 
-
     const currentPalette = {
        backgroundColors: theme === 'dark' ? [
         { name: 'Predeterminado', color: newGrayShades[0] }, { name: 'Tarjeta', color: newGrayShades[1] },
@@ -275,7 +297,7 @@ function App() {
         { name: 'Predeterminado', color: newGrayShades[7] }, { name: 'Fuerte', color: newGrayShades[5] },
       ],
       actionColors: [
-        { name: 'Primario', color: newBrandShades[3] }, { name: 'PrimarioFlotante', color: newBrandShades[4] },
+        { name: 'Primario', color: newBrandShades[4] }, { name: 'PrimarioFlotante', color: newBrandShades[5] },
         { name: 'Secundario', color: newGrayShades[3] }, { name: 'SecundarioFlotante', color: newGrayShades[4] },
       ],
       decorateColors: [
@@ -287,8 +309,8 @@ function App() {
     };
     
     currentPalette.fullActionColors = [
-        { name: 'Primario', color: newBrandShades[2] }, { name: 'PrimarioFlotante', color: newBrandShades[3] },
-        { name: 'PrimarioPresionado', color: newBrandShades[4] }, { name: 'Secundario', color: newGrayShades[4] },
+        { name: 'Primario', color: newBrandShades[4] }, { name: 'PrimarioFlotante', color: newBrandShades[5] },
+        { name: 'PrimarioPresionado', color: newBrandShades[6] }, { name: 'Secundario', color: newGrayShades[4] },
         { name: 'SecundarioPresionado', color: newGrayShades[5] }, { name: 'Critico', color: critical },
         { name: 'CriticoFlotante', color: tinycolor(critical).lighten(10).toHexString() }, { name: 'CriticoPresionado', color: tinycolor(critical).darken(10).toHexString() },
     ];
@@ -389,9 +411,9 @@ function App() {
     let isAccessible = false;
     while (!isAccessible) {
         newBrandColor = tinycolor.random();
-        const contrastWhite = tinycolor.readability('#FFF', newBrandColor);
-        if (contrastWhite > 4.5) {
-            isAccessible = true;
+        // Aseguramos que el color aleatorio sea lo suficientemente oscuro para tener contraste con texto blanco
+        if (newBrandColor.isDark() && tinycolor.readability('#FFF', newBrandColor) > 4.5) {
+             isAccessible = true;
         }
     }
     setIsGrayAuto(true);
@@ -532,13 +554,31 @@ function App() {
         </section>
 
         <section className="space-y-6 mb-8">
-           <div className="p-6 rounded-xl border bg-white">
-            <h2 className="font-bold mb-2 text-gray-900">Modo Claro</h2>
+           <div 
+             className="p-6 rounded-xl border" 
+             style={{ backgroundColor: usePureWhiteBg ? '#FFFFFF' : grayShades[9], borderColor: grayShades[7] }}
+           >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-gray-900">Modo Claro</h2>
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-gray-600">Fondo Blanco Puro</label>
+                <Switch checked={usePureWhiteBg} onCheckedChange={setUsePureWhiteBg} />
+              </div>
+            </div>
             <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="light"/>
             <ColorPalette title="Escala de Grises" color={grayColor} hex={grayColor} shades={grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="light"/>
           </div>
-           <div className="p-6 rounded-xl border bg-[#1E1E2A]">
-             <h2 className="font-bold mb-2 text-white">Modo Oscuro</h2>
+           <div 
+             className="p-6 rounded-xl border" 
+             style={{ backgroundColor: usePureBlackBg ? '#000000' : grayShades[0], borderColor: grayShades[2] }}
+           >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-white">Modo Oscuro</h2>
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-gray-300">Fondo Negro Puro</label>
+                <Switch checked={usePureBlackBg} onCheckedChange={setUsePureBlackBg} />
+              </div>
+            </div>
             <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
             <ColorPalette title="Escala de Grises" color={grayColor} hex={grayColor} shades={grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
           </div>
@@ -708,7 +748,7 @@ function App() {
       </main>
 
       <footer className="text-center mt-12 pt-8 border-t" style={{ borderColor: 'var(--border-default)', color: 'var(--text-muted)'}}>
-        <p className="text-sm">Creado con ❤️ por ti y la asistencia de IA. Inspirado en el sistema de diseño de Dionny Gómez.</p>
+        <p className="text-sm">Creado por JD_DM.</p>
         <p className="text-xs mt-1">Un proyecto de código abierto para la comunidad de Power Apps.</p>
       </footer>
 
