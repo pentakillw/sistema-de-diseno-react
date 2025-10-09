@@ -266,66 +266,52 @@ const HelpModal = ({ onClose }) => (
     </div>
 );
 
-// --- Componente para el Banner Publicitario (728x90) ---
-const AdBanner728x90 = () => {
-  const bannerRef = useRef(null);
+// --- Componente Reutilizable para Banners Publicitarios (Solución Robusta) ---
+// Este componente carga cada anuncio en un iframe aislado para evitar conflictos.
+const AdBanner = ({ adKey, width, height }) => {
+  const iframeRef = useRef(null);
 
   useEffect(() => {
-    const banner = bannerRef.current;
-    if (banner && banner.children.length === 0) { // Solo ejecutar si el banner está vacío
-      const configScript = document.createElement('script');
-      configScript.type = 'text/javascript';
-      configScript.innerText = `
-        atOptions = {
-          'key' : 'b69b0d3e0c5d0d674ead33e20daf57a4',
-          'format' : 'iframe',
-          'height' : 90,
-          'width' : 728,
-          'params' : {}
-        };
-      `;
-      
-      const adScript = document.createElement('script');
-      adScript.type = 'text/javascript';
-      adScript.src = "//www.highperformanceformat.com/b69b0d3e0c5d0d674ead33e20daf57a4/invoke.js";
-      
-      banner.appendChild(configScript);
-      banner.appendChild(adScript);
+    const iframe = iframeRef.current;
+    if (iframe) {
+      let doc = iframe.contentDocument;
+      if (iframe.contentWindow) {
+        doc = iframe.contentWindow.document;
+      }
+      doc.open();
+      doc.write(`
+        <html>
+          <head></head>
+          <body style="margin:0; padding:0; display:flex; justify-content:center; align-items:center;">
+            <script type="text/javascript">
+              atOptions = {
+                'key' : '${adKey}',
+                'format' : 'iframe',
+                'height' : ${height},
+                'width' : ${width},
+                'params' : {}
+              };
+            <\/script>
+            <script type="text/javascript" src="//www.highperformanceformat.com/${adKey}/invoke.js"><\/script>
+          </body>
+        </html>
+      `);
+      doc.close();
     }
-  }, []); // El array vacío asegura que se ejecute solo una vez
+  }, [adKey, width, height]);
 
-  return <div ref={bannerRef} className="my-8 flex justify-center items-center w-full" style={{ minHeight: '90px' }} />;
-};
-
-// --- Componente para el nuevo Banner Publicitario (468x60) ---
-const AdBanner468x60 = () => {
-  const bannerRef = useRef(null);
-
-  useEffect(() => {
-    const banner = bannerRef.current;
-    if (banner && banner.children.length === 0) { // Solo ejecutar si el banner está vacío
-      const configScript = document.createElement('script');
-      configScript.type = 'text/javascript';
-      configScript.innerText = `
-        atOptions = {
-          'key' : '654e6b72753482c0e1b9cb525d4eef56',
-          'format' : 'iframe',
-          'height' : 60,
-          'width' : 468,
-          'params' : {}
-        };
-      `;
-      
-      const adScript = document.createElement('script');
-      adScript.type = 'text/javascript';
-      adScript.src = "//www.highperformanceformat.com/654e6b72753482c0e1b9cb525d4eef56/invoke.js";
-      
-      banner.appendChild(configScript);
-      banner.appendChild(adScript);
-    }
-  }, []); // El array vacío asegura que se ejecute solo una vez
-
-  return <div ref={bannerRef} className="my-8 flex justify-center items-center w-full" style={{ minHeight: '60px' }} />;
+  return (
+    <div className="my-8 flex justify-center items-center w-full" style={{ minHeight: `${height}px` }}>
+      <iframe
+        ref={iframeRef}
+        width={width}
+        height={height}
+        style={{ border: '0', overflow: 'hidden' }}
+        scrolling="no"
+        title={`ad-${adKey}`}
+      />
+    </div>
+  );
 };
 
 
@@ -716,7 +702,7 @@ function App() {
                 </div>
             </section>
             
-            <AdBanner728x90 />
+            <AdBanner adKey="b69b0d3e0c5d0d674ead33e20daf57a4" width={728} height={90} />
 
              <section className="space-y-6 mb-8">
                <div 
@@ -769,7 +755,7 @@ function App() {
               </div>
             </section>
 
-            <AdBanner468x60 />
+            <AdBanner adKey="654e6b72753482c0e1b9cb525d4eef56" width={468} height={60} />
 
             <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
                <StyleCard title="Tipografía">{Object.entries(displayStylesConfig).map(([name, styles]) => (<div key={name} className="mb-2 truncate"><span style={{ fontSize: styles.fontSize, fontWeight: styles.fontWeight, color: 'var(--text-muted)' }}>{name}</span></div>))}</StyleCard>
@@ -866,7 +852,7 @@ function App() {
             
         </main>
         <footer className="text-center mt-12 pt-8 border-t" style={{ borderColor: 'var(--border-default)', color: 'var(--text-muted)'}}>
-            {/* --- CONTENEDOR DE PUBLICIDAD --- */}
+            {/* --- CONTENEDOR DE PUBLICIDAD (Footer) --- */}
             <div id="container-b1bcdef33e26ff258cea985fafbdf8da" className="mb-4"></div>
             
             <p className="text-sm">Creado por JD_DM.</p>
