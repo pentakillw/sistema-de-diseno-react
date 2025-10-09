@@ -266,6 +266,68 @@ const HelpModal = ({ onClose }) => (
     </div>
 );
 
+// --- Componente para el Banner Publicitario (728x90) ---
+const AdBanner728x90 = () => {
+  const bannerRef = useRef(null);
+
+  useEffect(() => {
+    const banner = bannerRef.current;
+    if (banner && banner.children.length === 0) { // Solo ejecutar si el banner está vacío
+      const configScript = document.createElement('script');
+      configScript.type = 'text/javascript';
+      configScript.innerText = `
+        atOptions = {
+          'key' : 'b69b0d3e0c5d0d674ead33e20daf57a4',
+          'format' : 'iframe',
+          'height' : 90,
+          'width' : 728,
+          'params' : {}
+        };
+      `;
+      
+      const adScript = document.createElement('script');
+      adScript.type = 'text/javascript';
+      adScript.src = "//www.highperformanceformat.com/b69b0d3e0c5d0d674ead33e20daf57a4/invoke.js";
+      
+      banner.appendChild(configScript);
+      banner.appendChild(adScript);
+    }
+  }, []); // El array vacío asegura que se ejecute solo una vez
+
+  return <div ref={bannerRef} className="my-8 flex justify-center items-center w-full" style={{ minHeight: '90px' }} />;
+};
+
+// --- Componente para el nuevo Banner Publicitario (468x60) ---
+const AdBanner468x60 = () => {
+  const bannerRef = useRef(null);
+
+  useEffect(() => {
+    const banner = bannerRef.current;
+    if (banner && banner.children.length === 0) { // Solo ejecutar si el banner está vacío
+      const configScript = document.createElement('script');
+      configScript.type = 'text/javascript';
+      configScript.innerText = `
+        atOptions = {
+          'key' : '654e6b72753482c0e1b9cb525d4eef56',
+          'format' : 'iframe',
+          'height' : 60,
+          'width' : 468,
+          'params' : {}
+        };
+      `;
+      
+      const adScript = document.createElement('script');
+      adScript.type = 'text/javascript';
+      adScript.src = "//www.highperformanceformat.com/654e6b72753482c0e1b9cb525d4eef56/invoke.js";
+      
+      banner.appendChild(configScript);
+      banner.appendChild(adScript);
+    }
+  }, []); // El array vacío asegura que se ejecute solo una vez
+
+  return <div ref={bannerRef} className="my-8 flex justify-center items-center w-full" style={{ minHeight: '60px' }} />;
+};
+
 
 // --- Componente Principal ---
 
@@ -653,6 +715,8 @@ function App() {
                   <button onClick={() => setTheme('dark')} className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors`} style={{ backgroundColor: theme === 'dark' ? 'var(--action-primary-default)' : 'var(--bg-muted)', color: theme === 'dark' ? 'white' : 'var(--text-default)'}}>Modo Oscuro</button>
                 </div>
             </section>
+            
+            <AdBanner728x90 />
 
              <section className="space-y-6 mb-8">
                <div 
@@ -704,6 +768,8 @@ function App() {
                 <ColorPalette title="Escala de Grises Armónica" color={harmonyPalettes.gray} hex={harmonyPalettes.gray} shades={harmonyPalettes.grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
               </div>
             </section>
+
+            <AdBanner468x60 />
 
             <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
                <StyleCard title="Tipografía">{Object.entries(displayStylesConfig).map(([name, styles]) => (<div key={name} className="mb-2 truncate"><span style={{ fontSize: styles.fontSize, fontWeight: styles.fontWeight, color: 'var(--text-muted)' }}>{name}</span></div>))}</StyleCard>
@@ -813,3 +879,4 @@ function App() {
 }
 
 export default App;
+
