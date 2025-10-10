@@ -291,8 +291,8 @@ const AdBanner = ({ adKey, width, height }) => {
                 'width' : ${width},
                 'params' : {}
               };
-            <\/script>
-            <script type="text/javascript" src="//www.highperformanceformat.com/${adKey}/invoke.js"><\/script>
+            </script>
+            <script type="text/javascript" src="//www.highperformanceformat.com/${adKey}/invoke.js"></script>
           </body>
         </html>
       `);
