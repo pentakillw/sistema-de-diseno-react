@@ -677,15 +677,15 @@ function App() {
         style={{ fontFamily: availableFonts[font], backgroundColor: 'var(--bg-default)', color: 'var(--text-default)', filter: simulationMode !== 'none' ? `url(#${simulationMode})` : 'none' }}
       >
         {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
-        <header className="relative flex justify-between items-center mb-8">
+        <header className="relative flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
              <div className="flex items-center gap-4">
-                <img src="https://raw.githubusercontent.com/pentakillw/sistema-de-diseno-react/main/Icono_FX.png" alt="Sistema FX Logo" className="h-24 w-24 rounded-2xl shadow-md"/>
+                <img src="https://raw.githubusercontent.com/pentakillw/sistema-de-diseno-react/main/Icono_FX.png" alt="Sistema FX Logo" className="h-20 w-20 md:h-24 md:w-24 rounded-2xl shadow-md"/>
                 <div>
                     <h1 className="text-3xl font-bold" style={{ color: 'var(--text-default)'}}>BIENVENIDOS</h1>
                     <p className="text-md" style={{ color: 'var(--text-muted)'}}>al sistema de diseño para Power Apps</p>
                 </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-center md:self-auto">
                 <input type="file" ref={importFileRef} onChange={handleImport} accept=".json" className="hidden"/>
                 <button title="Reiniciar Tema" onClick={handleReset} className="text-sm font-medium p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}><RefreshCcw size={16}/></button>
                 <button title="Importar Tema" onClick={() => importFileRef.current.click()} className="text-sm font-medium p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}><Upload size={16}/></button>
@@ -695,7 +695,7 @@ function App() {
         </header>
 
         <main>
-            <div className="sticky top-4 z-40 mb-8">
+            <div className="md:sticky top-4 z-40 mb-8">
                 <section className="p-4 rounded-xl border shadow-lg" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
                     <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
                         <div className="flex items-center gap-2">
