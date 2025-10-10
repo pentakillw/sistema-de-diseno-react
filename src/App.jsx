@@ -40,7 +40,7 @@ const displayStylesConfig = {
 // --- Funciones de Generación de Código ---
 
 const generatePowerFxCode = (themeData, separator, useQuotes) => {
-  const { brandShades, grayShades, stylePalette, theme, brandColor, grayColor, font, harmonyPalettes } = themeData;
+  const { brandShades, grayShades, stylePalette, font, harmonyPalettes } = themeData;
   
   const formatKey = (key) => {
       if (useQuotes) return `"${key}"`;
@@ -175,6 +175,101 @@ ${formatShades(grayShades)}
 
 
 // --- Componentes ---
+
+const AccessibilityCard = ({ accessibility, colors, isVisible, onToggle }) => {
+  const cardStyle = {
+    backgroundColor: 'var(--bg-card)',
+    borderColor: 'var(--border-default)',
+    color: 'var(--text-default)'
+  };
+
+  const getLevelColor = (level) => {
+    switch (level) {
+      case 'AAA':
+        return { bg: 'var(--bg-success-weak)', text: 'var(--text-success)' };
+      case 'AA':
+        return { bg: 'var(--bg-attention-weak)', text: 'var(--text-attention)' };
+      default: // 'Fallido'
+        return { bg: 'var(--bg-critical-weak)', text: 'var(--text-critical)' };
+    }
+  };
+  
+  const btnLevelColors = getLevelColor(accessibility.btn.level);
+  const textLevelColors = getLevelColor(accessibility.text.level);
+
+  return (
+    <section className="p-4 rounded-xl border mb-8" style={cardStyle}>
+       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <h2 className="font-bold text-lg flex items-center gap-2" style={{ color: 'var(--text-default)'}}>
+          <Eye size={20} /> Verificación de Accesibilidad
+        </h2>
+        <button 
+          onClick={onToggle}
+          className="text-sm font-medium py-1 px-3 rounded-lg"
+          style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}
+        >
+          {isVisible ? 'Ocultar' : 'Mostrar'}
+        </button>
+      </div>
+
+      {isVisible && (
+        <div className="mt-4 pt-4 border-t" style={{borderColor: 'var(--border-default)'}}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Card para el Botón */}
+            <div>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Contraste del Botón Principal</h3>
+              <div className="flex items-center gap-4">
+                <div 
+                  className="w-24 h-12 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner"
+                  style={{ backgroundColor: colors.btnBg, color: colors.btnText }}
+                >
+                  Botón
+                </div>
+                <div className="text-sm">
+                  <p>Ratio: <span className="font-bold">{accessibility.btn.ratio}:1</span></p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span>Nivel:</span>
+                    <span className="font-bold px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: btnLevelColors.bg, color: btnLevelColors.text }}>
+                      {accessibility.btn.level}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs mt-3 italic" style={{ color: 'var(--text-muted)' }}>
+                Se mide el color de <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.btnBg.toUpperCase()}</span> (fondo) contra <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.btnText.toUpperCase()}</span> (texto).
+              </p>
+            </div>
+
+            {/* Card para el Texto */}
+            <div>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Contraste del Texto Principal</h3>
+              <div className="flex items-center gap-4">
+                <div 
+                  className="w-24 h-12 rounded-lg flex items-center justify-center text-sm shadow-inner p-2 text-center"
+                  style={{ backgroundColor: colors.textBg, color: colors.textColor, border: '1px solid var(--border-strong)' }}
+                >
+                  Texto de ejemplo
+                </div>
+                <div className="text-sm">
+                  <p>Ratio: <span className="font-bold">{accessibility.text.ratio}:1</span></p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span>Nivel:</span>
+                    <span className="font-bold px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: textLevelColors.bg, color: textLevelColors.text }}>
+                      {accessibility.text.level}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs mt-3 italic" style={{ color: 'var(--text-muted)' }}>
+                Se mide el color de <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.textColor.toUpperCase()}</span> (texto) contra <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.textBg.toUpperCase()}</span> (fondo).
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};
 
 const ColorPalette = ({ title, color, hex, shades, onShadeCopy, themeOverride, isExplorer = false }) => (
   <div className="mb-4">
@@ -391,6 +486,7 @@ function App() {
   const [cssCode, setCssCode] = useState('');
   const [tailwindCode, setTailwindCode] = useState('');
   
+  const [isAccessibilityVisible, setIsAccessibilityVisible] = useState(false);
   const [isExportVisible, setIsExportVisible] = useState(false);
   const [isComponentPreviewVisible, setIsComponentPreviewVisible] = useState(false);
   const [activeExport, setActiveExport] = useState('powerfx');
@@ -398,7 +494,15 @@ function App() {
   const [isBrandPickerVisible, setIsBrandPickerVisible] = useState(false);
   const [isGrayPickerVisible, setIsGrayPickerVisible] = useState(false);
   const [isHelpVisible, setIsHelpVisible] = useState(false);
+  
   const [accessibility, setAccessibility] = useState({ btn: { ratio: 0, level: 'Fail'}, text: { ratio: 0, level: 'Fail'} });
+  const [accessibilityColors, setAccessibilityColors] = useState({
+    btnBg: defaultState.brandColor,
+    btnText: '#FFFFFF',
+    textBg: '#FFFFFF',
+    textColor: '#000000',
+  });
+
 
   const [lightPreviewMode, setLightPreviewMode] = useState('T950');
   const [darkPreviewMode, setDarkPreviewMode] = useState('T0');
@@ -421,22 +525,25 @@ function App() {
       const randomColor = tinycolor.random();
 
       switch (method) {
-          case 'mono':
+          case 'mono': {
               newPalette = generateShades(randomColor.toHexString());
               break;
-          case 'analogous':
+          }
+          case 'analogous': {
               const analogousColors = randomColor.analogous(5, 10);
               analogousColors.forEach(c => {
                   newPalette.push(...generateShades(c.toHexString()).slice(4, 8));
               });
               break;
-          case 'complement':
+          }
+          case 'complement': {
               const complementColors = [randomColor, randomColor.complement()];
               complementColors.forEach(c => {
                   newPalette.push(...generateShades(c.toHexString()).slice(0, 10));
               });
               break;
-          case 'triad':
+          }
+          case 'triad': {
               const triadColors = randomColor.triad();
               for(let i = 0; i < 7; i++) {
                   newPalette.push(...generateShades(triadColors[0].toHexString()).slice(i*2, i*2+2));
@@ -445,14 +552,16 @@ function App() {
               }
                newPalette = newPalette.slice(0, 20);
               break;
-          case 'tetrad':
+          }
+          case 'tetrad': {
               const tetradColors = randomColor.tetrad();
               tetradColors.forEach(c => {
                   newPalette.push(...generateShades(c.toHexString()).slice(2, 7));
               });
               break;
+          }
           case 'auto':
-          default:
+          default: {
               let hsv = { h: Math.random() * 360, s: 0.5 + Math.random() * 0.5, v: 0.8 + Math.random() * 0.2 };
               for (let i = 0; i < 20; i++) {
                   hsv.h = (hsv.h + 137.508) % 360; // Golden Angle
@@ -461,6 +570,7 @@ function App() {
                   newPalette.push(tinycolor(hsv).toHexString());
               }
               break;
+          }
       }
       setExplorerPalette(newPalette.slice(0,20));
   };
@@ -628,29 +738,51 @@ function App() {
     root.style.setProperty('--bg-critical-weak', currentPalette.fullBackgroundColors.find(c=>c.name==='CriticoDebil').color);
     
     // --- Lógica de Accesibilidad ---
+    // EXPLICACIÓN: Aquí calculamos el contraste para dos casos críticos:
+    // 1. Botón Principal: Su color de fondo vs el texto que debería llevar (blanco o negro).
+    // 2. Texto Principal: El color de texto por defecto vs el color de fondo por defecto del tema.
 
-    // Botón: Mide el contraste interno del botón (su fondo vs su texto)
+    // 1. CÁLCULO PARA EL BOTÓN PRINCIPAL
+    // Obtenemos el color de fondo del botón primario que acabamos de generar.
     const primaryActionColor = currentPalette.fullActionColors.find(c => c.name === 'Primario').color;
-    const lightColor = newGrayShades[19]; // Tono más claro
-    const darkColor = newGrayShades[0];   // Tono más oscuro
+    // Obtenemos el blanco y el negro puros de nuestra escala de grises para usarlos como posibles colores de texto.
+    const lightColor = newGrayShades[19]; // Tono más claro (blanco)
+    const darkColor = newGrayShades[0];   // Tono más oscuro (negro)
+    // Medimos el contraste del fondo del botón contra ambos colores.
     const contrastWithLight = tinycolor.readability(primaryActionColor, lightColor);
     const contrastWithDark = tinycolor.readability(primaryActionColor, darkColor);
+    // Elegimos el color de texto (blanco o negro) que dé MAYOR contraste. Este será el color de texto recomendado.
     const newBestTextColor = contrastWithLight > contrastWithDark ? lightColor : darkColor;
     setPrimaryButtonTextColor(newBestTextColor);
+    // El ratio de contraste final del botón es el valor más alto que pudimos obtener.
     const btnContrast = Math.max(contrastWithLight, contrastWithDark);
     
-    // Texto: Mide el contraste del texto principal contra el fondo principal DEL TEMA GENERADO
+    // 2. CÁLCULO PARA EL TEXTO PRINCIPAL
+    // Obtenemos el color de texto por defecto del tema actual (claro u oscuro).
     const themeTextColor = currentPalette.fullForegroundColors.find(c => c.name === 'Predeterminado').color;
+    // Obtenemos el color de fondo por defecto del tema actual.
     const themeBgColor = currentPalette.fullBackgroundColors.find(c => c.name === 'Predeterminado').color;
+    // Medimos el contraste entre ellos.
     const textContrast = tinycolor.readability(themeTextColor, themeBgColor);
     
+    // Asignamos un nivel (Fallido, AA, o AAA) según las guías WCAG.
     let btnLevel = 'Fallido', textLevel = 'Fallido';
     if (btnContrast >= 7) btnLevel = 'AAA'; else if (btnContrast >= 4.5) btnLevel = 'AA';
     if (textContrast >= 7) textLevel = 'AAA'; else if (textContrast >= 4.5) textLevel = 'AA';
 
+    // Actualizamos el estado de accesibilidad que se muestra en la UI.
     setAccessibility({ 
         btn: { ratio: btnContrast.toFixed(2), level: btnLevel },
         text: { ratio: textContrast.toFixed(2), level: textLevel } 
+    });
+
+    // Actualizamos el estado con los colores exactos que se usaron para el cálculo,
+    // para que el nuevo componente visual pueda mostrarlos de forma explícita.
+    setAccessibilityColors({
+        btnBg: primaryActionColor,
+        btnText: newBestTextColor,
+        textBg: themeBgColor,
+        textColor: themeTextColor,
     });
     
     const themeData = {
@@ -732,6 +864,7 @@ function App() {
             showNotification('Archivo de tema inválido.', 'error');
           }
         } catch (error) {
+          console.error("Error al importar el tema:", error);
           showNotification('Error al leer el archivo de tema.', 'error');
         }
       };
@@ -871,19 +1004,6 @@ function App() {
                         <div className="hidden lg:block h-6 w-px bg-[var(--border-default)]"></div>
 
                         <div className="flex items-center gap-2">
-                            <label className="text-sm">Accesibilidad:</label>
-                            <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1" title={`Contraste del Botón: ${accessibility.btn.ratio}:1`}>
-                                    <span className="text-xs font-bold p-1 rounded w-12 text-center" style={{backgroundColor: accessibility.btn.level === 'Fallido' ? '#fecaca' : '#bbf7d0', color: accessibility.btn.level === 'Fallido' ? '#991b1b' : '#166534'}}>{accessibility.btn.level}</span>
-                                    <span className="text-xs">Botón</span>
-                                </div>
-                                <div className="flex items-center gap-1" title={`Contraste del Texto: ${accessibility.text.ratio}:1`}>
-                                    <span className="text-xs font-bold p-1 rounded w-12 text-center" style={{backgroundColor: accessibility.text.level === 'Fallido' ? '#fecaca' : '#bbf7d0', color: accessibility.text.level === 'Fallido' ? '#991b1b' : '#166534'}}>{accessibility.text.level}</span>
-                                    <span className="text-xs">Texto</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
                             <label className="text-sm" htmlFor="simSelectorTop">Simulador:</label>
                             <select id="simSelectorTop" value={simulationMode} onChange={(e) => setSimulationMode(e.target.value)} className="font-semibold px-2 py-1 rounded-md border" style={{ backgroundColor: theme === 'light' ? '#FFFFFF' : '#374151', color: pageThemeStyle.color, borderColor: controlsThemeStyle.borderColor }}>
                                 <option value="none">Ninguno</option>
@@ -896,6 +1016,13 @@ function App() {
                 </section>
             </div>
             
+            <AccessibilityCard 
+              accessibility={accessibility} 
+              colors={accessibilityColors} 
+              isVisible={isAccessibilityVisible}
+              onToggle={() => setIsAccessibilityVisible(!isAccessibilityVisible)}
+            />
+
             <section className="p-4 rounded-xl border mb-8" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
                     <h2 className="font-bold text-lg flex items-center gap-2" style={{ color: 'var(--text-default)'}}>
@@ -1158,6 +1285,7 @@ function App() {
             onThemeToggle={handleThemeToggle}
             currentTheme={theme}
         />
+        {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
       </div>
     </>
   );
