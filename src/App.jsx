@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import tinycolor from 'tinycolor2';
-import { Sparkles, Wand2, HelpCircle, X, Check, Clipboard, Download, Upload, AlertCircle, RefreshCcw, FileCode, Eye, Palette, Settings } from 'lucide-react';
+import { Sparkles, Wand2, HelpCircle, X, Check, Clipboard, Download, Upload, AlertCircle, RefreshCcw, FileCode, Eye, Palette, Settings, Info, CheckCircle, AlertTriangle } from 'lucide-react';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
 
 // --- Funciones de Utilidad de Colores (lógica interna en inglés) ---
@@ -52,7 +52,7 @@ const displayStylesConfig = {
 // --- Funciones de Generación de Código ---
 
 const generatePowerFxCode = (themeData, separator, useQuotes) => {
-  const { brandShades, grayShades, stylePalette, theme, brandColor, grayColor, font } = themeData;
+  const { brandShades, grayShades, stylePalette, theme, brandColor, grayColor, font, harmonyPalettes } = themeData;
   
   const formatKey = (key) => {
       if (useQuotes) return `"${key}"`;
@@ -62,14 +62,24 @@ const generatePowerFxCode = (themeData, separator, useQuotes) => {
   const formatStylePalette = (palette) => palette.map(item => `    ${formatKey(item.name)}: "${item.color.toUpperCase()}"`).join(`${separator}\n`);
   
   const fontStylesRecord = Object.entries(displayStylesConfig)
-    .map(([name, styles]) => `    ${formatKey(name)}: { Font: Font.'${font.split(' ')[0]}'${separator} Size: ${parseFloat(styles.fontSize) * 10}${separator} Bold: ${styles.fontWeight === '700'} }`)
+    .map(([name, styles]) => `    ${formatKey(name)}: { Font: Font.'${font.split(',')[0].replace(/"/g, '')}'${separator} Size: ${Math.round(parseFloat(styles.fontSize) * 10)}${separator} Bold: ${styles.fontWeight === '700'} }`)
     .join(`${separator}\n`);
 
   return `
-// --- TEMA DE DISEÑO GENERADO ---
-// Modo: ${theme === 'light' ? 'Claro' : 'Oscuro'}
-// Fuente: ${font}
-// Marca: ${brandColor.toUpperCase()} | Base Gris: ${grayColor.toUpperCase()}
+// --- TEMA DE DISEÑO PARA POWER APPS ---
+// Generado por Sistema FX
+//
+// CÓMO USAR:
+// 1. Copia todo este código.
+// 2. En Power Apps, ve a la propiedad 'OnStart' de la App.
+// 3. Pega el código. Esto creará la colección 'colSistemaDeDiseño'.
+//
+// EJEMPLOS DE APLICACIÓN:
+// - Color de un botón: LookUp(colSistemaDeDiseño, true).Acciones.Primario
+// - Tamaño de fuente de una etiqueta: LookUp(colSistemaDeDiseño, true).Fuentes.'TítuloGrande'.Size
+// - Familia de fuente: LookUp(colSistemaDeDiseño, true).Fuentes.'TítuloGrande'.Font
+// -------------------------------------------
+
 ClearCollect(
     colSistemaDeDiseño${separator}
     {
@@ -78,6 +88,12 @@ ${brandShades.map((s, i) => `    ${formatKey('t' + (i * 100))}: "${s.toUpperCase
         }${separator}
         Gris: {
 ${grayShades.map((s, i) => `    ${formatKey('t' + (i * 100))}: "${s.toUpperCase()}"`).join(`${separator}\n`)}
+        }${separator}
+        Acento: {
+${harmonyPalettes.accentShades.map((s, i) => `    ${formatKey('t' + (i * 100))}: "${s.toUpperCase()}"`).join(`${separator}\n`)}
+        }${separator}
+        GrisArmonico: {
+${harmonyPalettes.grayShades.map((s, i) => `    ${formatKey('t' + (i * 100))}: "${s.toUpperCase()}"`).join(`${separator}\n`)}
         }${separator}
         Fondos: {
 ${formatStylePalette(stylePalette.fullBackgroundColors)}
@@ -194,12 +210,12 @@ const ColorPalette = ({ title, color, hex, shades, onShadeCopy, themeOverride })
     </div>
      <div className={`flex text-xs font-mono px-1 relative pt-2 mt-1 ${themeOverride === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
         <div 
-          className="absolute top-0 w-0 h-0"
+          className="absolute top-0 w-0 h-0 drop-shadow-md"
           style={{
-            left: '45%',
-            borderLeft: '5px solid transparent',
-            borderRight: '5px solid transparent',
-            borderTop: `5px solid ${themeOverride === 'light' ? '#374151' : '#D1D5DB'}`
+            left: 'calc(45% - 7px)',
+            borderLeft: '7px solid transparent',
+            borderRight: '7px solid transparent',
+            borderTop: `10px solid ${themeOverride === 'light' ? '#374151' : '#D1D5DB'}`
           }}
           title="Color Base"
         ></div>
@@ -252,72 +268,34 @@ const HelpModal = ({ onClose }) => (
             <button onClick={onClose} className="absolute top-4 right-4" style={{ color: 'var(--text-muted)'}}>
                 <X size={24}/>
             </button>
-            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-default)'}}>Guía de Uso del Sistema de Diseño</h2>
-            <div className="space-y-3 text-sm" style={{ color: 'var(--text-muted)'}}>
-                <p>¡Bienvenido! Esta herramienta te ayuda a crear y exportar sistemas de diseño coherentes y accesibles para tus aplicaciones.</p>
-                <ol className="list-decimal list-inside space-y-2">
-                    <li><strong style={{ color: 'var(--text-default)'}}>Elige un Color de Marca:</strong> Usa el selector de color o el botón "Aleatorio" para encontrar un color principal accesible.</li>
-                    <li><strong style={{ color: 'var(--text-default)'}}>Explora Armonías:</strong> Activa el "Modo Armonía" para generar y visualizar paletas de colores complementarios, análogos y triádicos.</li>
-                    <li><strong style={{ color: 'var(--text-default)'}}>Simula Daltonismo:</strong> Usa el selector en la sección de "Accesibilidad" para ver cómo perciben los colores las personas con distintos tipos de daltonismo.</li>
-                    <li><strong style={{ color: 'var(--text-default)'}}>Exporta a CSS, Power Fx y Tailwind:</strong> Ahora puedes exportar tu paleta a múltiples formatos para una integración más rápida.</li>
-                </ol>
+            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-default)'}}>Guía Rápida para Tu Sistema de Diseño</h2>
+            <div className="space-y-4 text-sm" style={{ color: 'var(--text-muted)'}}>
+                <p>¡Hola! Con esta herramienta, crearás una paleta de colores profesional en segundos. Sigue estos 4 pasos:</p>
+                <div className="space-y-3">
+                    <h3 className="font-semibold" style={{ color: 'var(--text-default)'}}>1. Elige tu Color Principal</h3>
+                    <p>Usa el selector de <strong>Color de Marca</strong> para elegir tu color base. ¿No tienes uno? Presiona el botón <strong>Aleatorio ✨</strong> para descubrir colores geniales que funcionan bien.</p>
+                </div>
+                 <div className="space-y-3">
+                    <h3 className="font-semibold" style={{ color: 'var(--text-default)'}}>2. Ajusta y Personaliza</h3>
+                    <p>Activa <strong>Gris Automático 🤖</strong> para que la herramienta elija la mejor escala de grises por ti. Selecciona la <strong>Fuente</strong> que más te guste y cambia entre <strong>Modo Claro y Oscuro</strong> para previsualizar.</p>
+                </div>
+                 <div className="space-y-3">
+                    <h3 className="font-semibold" style={{ color: 'var(--text-default)'}}>3. Guarda y Carga tus Temas</h3>
+                    <p>Usa los botones de <strong>Exportar 💾</strong> para guardar tu diseño actual en un archivo. ¿Quieres continuar con un diseño guardado? Usa <strong>Importar 📂</strong> para cargarlo.</p>
+                </div>
+                 <div className="space-y-3">
+                    <h3 className="font-semibold" style={{ color: 'var(--text-default)'}}>4. Exporta tu Código</h3>
+                    <p>En la sección <strong>Opciones de Exportación</strong>, elige el formato que necesitas (Power Fx, CSS, o Tailwind), copia el código y pégalo directamente en tu proyecto. ¡Listo!</p>
+                </div>
             </div>
         </div>
     </div>
 );
 
-// --- Componente Reutilizable para Banners Publicitarios (Solución Robusta) ---
-// Este componente carga cada anuncio en un iframe aislado para evitar conflictos.
-const AdBanner = ({ adKey, width, height }) => {
-  const iframeRef = useRef(null);
-
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (iframe) {
-      let doc = iframe.contentDocument;
-      if (iframe.contentWindow) {
-        doc = iframe.contentWindow.document;
-      }
-      doc.open();
-      doc.write(`
-        <html>
-          <head></head>
-          <body style="margin:0; padding:0; display:flex; justify-content:center; align-items:center;">
-            <script type="text/javascript">
-              atOptions = {
-                'key' : '${adKey}',
-                'format' : 'iframe',
-                'height' : ${height},
-                'width' : ${width},
-                'params' : {}
-              };
-            </script>
-            <script type="text/javascript" src="//www.highperformanceformat.com/${adKey}/invoke.js"></script>
-          </body>
-        </html>
-      `);
-      doc.close();
-    }
-  }, [adKey, width, height]);
-
-  return (
-    <div className="my-8 flex justify-center items-center w-full" style={{ minHeight: `${height}px` }}>
-      <iframe
-        ref={iframeRef}
-        width={width}
-        height={height}
-        style={{ border: '0', overflow: 'hidden' }}
-        scrolling="no"
-        title={`ad-${adKey}`}
-      />
-    </div>
-  );
-};
-
-
 // --- Componente Principal ---
 
 const availableFonts = {
+  'Segoe UI': '"Segoe UI", system-ui, sans-serif',
   'Poppins': '"Poppins", sans-serif',
   'Roboto Slab': '"Roboto Slab", serif',
   'Inconsolata': '"Inconsolata", monospace',
@@ -327,18 +305,20 @@ const availableFonts = {
 };
 
 const defaultState = {
-    theme: 'dark',
+    theme: 'light',
     brandColor: '#009fdb',
-    isGrayAuto: true,
-    font: 'Poppins',
+    isGrayAuto: false,
+    grayColor: '#5d5d5d',
+    font: 'Segoe UI',
     fxSeparator: ';',
     useFxQuotes: true,
+    usePureWhiteBg: true,
 };
 
 function App() {
   const [theme, setTheme] = useState(defaultState.theme);
   const [brandColor, setBrandColor] = useState(defaultState.brandColor);
-  const [grayColor, setGrayColor] = useState('#5d757e');
+  const [grayColor, setGrayColor] = useState(defaultState.grayColor);
   const [isGrayAuto, setIsGrayAuto] = useState(defaultState.isGrayAuto);
   
   const [font, setFont] = useState(defaultState.font);
@@ -359,6 +339,7 @@ function App() {
   const [tailwindCode, setTailwindCode] = useState('');
   
   const [isExportVisible, setIsExportVisible] = useState(false);
+  const [isComponentPreviewVisible, setIsComponentPreviewVisible] = useState(true);
   const [activeExport, setActiveExport] = useState('powerfx');
 
   const [isBrandPickerVisible, setIsBrandPickerVisible] = useState(false);
@@ -366,7 +347,7 @@ function App() {
   const [isHelpVisible, setIsHelpVisible] = useState(false);
   const [accessibility, setAccessibility] = useState({ btn: { ratio: 0, level: 'Fail'}, text: { ratio: 0, level: 'Fail'} });
 
-  const [usePureWhiteBg, setUsePureWhiteBg] = useState(false);
+  const [usePureWhiteBg, setUsePureWhiteBg] = useState(defaultState.usePureWhiteBg);
   const [usePureBlackBg, setUsePureBlackBg] = useState(false);
   const [simulationMode, setSimulationMode] = useState('none');
 
@@ -407,12 +388,13 @@ function App() {
     const harmonyAccentShades = generateShades(accentColor);
     const harmonyGray = tinycolor(accentColor).desaturate(85).toHexString();
     const harmonyGrayShades = generateGrayShades(harmonyGray);
-    setHarmonyPalettes({
+    const newHarmonyPalettes = {
         accentColor: accentColor,
         accentShades: harmonyAccentShades,
         gray: harmonyGray,
         grayShades: harmonyGrayShades
-    });
+    };
+    setHarmonyPalettes(newHarmonyPalettes);
 
 
     const infoBase = '#0ea5e9', successBase = '#22c55e', attentionBase = '#f97316', criticalBase = '#ef4444',
@@ -520,6 +502,21 @@ function App() {
     root.style.setProperty('--border-strong', currentPalette.fullBorderColors.find(c=>c.name==='Fuerte').color);
     root.style.setProperty('--action-primary-default', currentPalette.fullActionColors.find(c=>c.name==='Primario').color);
     root.style.setProperty('--action-primary-hover', currentPalette.fullActionColors.find(c=>c.name==='PrimarioFlotante').color);
+
+    const infoColor = currentPalette.fullForegroundColors.find(c=>c.name==='Info').color;
+    const successColor = currentPalette.fullForegroundColors.find(c=>c.name==='Exito').color;
+    const attentionColor = currentPalette.fullForegroundColors.find(c=>c.name==='Atencion').color;
+    const criticalColor = currentPalette.fullForegroundColors.find(c=>c.name==='Critico').color;
+    
+    root.style.setProperty('--text-info', infoColor);
+    root.style.setProperty('--text-success', successColor);
+    root.style.setProperty('--text-attention', attentionColor);
+    root.style.setProperty('--text-critical', criticalColor);
+
+    root.style.setProperty('--bg-info-weak', currentPalette.fullBackgroundColors.find(c=>c.name==='InfoDebil').color);
+    root.style.setProperty('--bg-success-weak', currentPalette.fullBackgroundColors.find(c=>c.name==='ExitoDebil').color);
+    root.style.setProperty('--bg-attention-weak', currentPalette.fullBackgroundColors.find(c=>c.name==='AtencionDebil').color);
+    root.style.setProperty('--bg-critical-weak', currentPalette.fullBackgroundColors.find(c=>c.name==='CriticoDebil').color);
     
     const btnContrast = tinycolor.readability(currentPalette.fullActionColors.find(c=>c.name==='Primario').color, '#FFFFFF');
     const textContrast = tinycolor.readability(currentPalette.fullForegroundColors.find(c=>c.name==='Predeterminado').color, finalBg);
@@ -535,7 +532,8 @@ function App() {
     
     const themeData = {
         brandShades: newBrandShades, grayShades: newGrayShades,
-        stylePalette: currentPalette, theme, brandColor, grayColor, font
+        stylePalette: currentPalette, theme, brandColor, grayColor, font,
+        harmonyPalettes: newHarmonyPalettes
     };
 
     setGeneratedCode(generatePowerFxCode(themeData, fxSeparator, useFxQuotes));
@@ -625,6 +623,8 @@ function App() {
     setFont(defaultState.font);
     setFxSeparator(defaultState.fxSeparator);
     setUseFxQuotes(defaultState.useFxQuotes);
+    setUsePureWhiteBg(defaultState.usePureWhiteBg);
+    setGrayColor(defaultState.grayColor);
     showNotification("Tema reiniciado a los valores por defecto.");
   };
   
@@ -651,14 +651,9 @@ function App() {
         style={{ fontFamily: availableFonts[font], backgroundColor: 'var(--bg-default)', color: 'var(--text-default)', filter: simulationMode !== 'none' ? `url(#${simulationMode})` : 'none' }}
       >
         {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
-        <header className="relative flex justify-center items-center mb-8">
-            <div className="absolute left-0 font-bold text-lg" style={{ color: 'var(--text-default)'}}>
-              <span style={{ color: 'var(--action-primary-default)'}}>Mi</span>Sistema
-            </div>
-            <h1 className="text-2xl font-bold" style={{ color: 'var(--text-default)'}}>
-              Sistema de diseño
-            </h1>
-            <div className="absolute right-0 flex items-center gap-2">
+        <header className="relative flex justify-between items-center mb-4">
+             <img src="https://raw.githubusercontent.com/pentakillw/sistema-de-diseno-react/main/Icono_FX.png" alt="Sistema FX Logo" className="h-12 w-12"/>
+            <div className="flex items-center gap-2">
                 <input type="file" ref={importFileRef} onChange={handleImport} accept=".json" className="hidden"/>
                 <button title="Reiniciar Tema" onClick={handleReset} className="text-sm font-medium p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}><RefreshCcw size={16}/></button>
                 <button title="Importar Tema" onClick={() => importFileRef.current.click()} className="text-sm font-medium p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}><Upload size={16}/></button>
@@ -666,104 +661,70 @@ function App() {
                 <button title="Ayuda" onClick={() => setIsHelpVisible(true)} className="text-sm font-medium p-2 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}><HelpCircle size={16}/></button>
             </div>
         </header>
+        <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold" style={{ color: 'var(--text-default)'}}>Bienvenidos al sistema de diseño para Power Apps</h1>
+        </div>
 
         <main>
-            <section className="p-4 rounded-xl mb-8 flex flex-wrap items-center justify-around gap-4 border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
-               <div className="flex items-center gap-2">
-                <label className="text-sm" style={{ color: 'var(--text-muted)'}} htmlFor="fontSelector">Fuente:</label>
-                <select id="fontSelector" value={font} onChange={(e) => setFont(e.target.value)} className="font-semibold px-2 py-1 rounded-md border" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}>
-                    {Object.keys(availableFonts).map(fontName => (<option key={fontName} value={fontName}>{fontName}</option>))}
-                </select>
-              </div>
-              <div className="relative flex items-center gap-2">
-                <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Color de Marca:</label>
-                <div className="flex items-center rounded-md" style={{ backgroundColor: 'var(--bg-muted)'}}>
-                    <div className="w-7 h-7 rounded-l-md cursor-pointer border-r" style={{ backgroundColor: brandColor, borderColor: 'var(--border-strong)' }} onClick={() => setIsBrandPickerVisible(!isBrandPickerVisible)}/>
-                     <HexColorInput color={brandColor} onChange={setBrandColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{ color: 'var(--text-default)'}} prefixed/>
-                </div>
-                {isBrandPickerVisible && (<div className="absolute z-10 top-full mt-2 left-0 w-56"><div className="fixed inset-0" onClick={() => setIsBrandPickerVisible(false)} /><HexColorPicker color={brandColor} onChange={setBrandColor} /></div>)}
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2"><Wand2 size={16} style={{ color: 'var(--text-muted)'}}/><label className="text-sm font-medium" style={{ color: 'var(--text-muted)'}}>Gris Automático</label></div>
-                <Switch checked={isGrayAuto} onCheckedChange={setIsGrayAuto} />
-              </div>
-              <div className={`relative flex items-center gap-2 transition-opacity ${isGrayAuto ? 'opacity-50' : 'opacity-100'}`}>
-                <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Escala de Grises:</label>
-                <div className="flex items-center rounded-md" style={{ backgroundColor: 'var(--bg-muted)'}}>
-                    <div className={`w-7 h-7 rounded-l-md border-r ${isGrayAuto ? 'cursor-not-allowed' : 'cursor-pointer'}`} style={{ backgroundColor: grayColor, borderColor: 'var(--border-strong)' }} onClick={() => !isGrayAuto && setIsGrayPickerVisible(!isGrayPickerVisible)}/>
-                     <HexColorInput color={grayColor} onChange={setGrayColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{ color: 'var(--text-default)'}} prefixed disabled={isGrayAuto}/>
-                </div>
-                {isGrayPickerVisible && !isGrayAuto && (<div className="absolute z-10 top-full mt-2 right-0 w-56"><div className="fixed inset-0" onClick={() => setIsGrayPickerVisible(false)} /><HexColorPicker color={grayColor} onChange={setGrayColor} /></div>)}
-              </div>
-               <button onClick={handleRandomTheme} className="text-sm font-medium py-2 px-4 rounded-lg transition-colors text-white hover:opacity-90 flex items-center gap-2" style={{ background: 'linear-gradient(to right, var(--action-primary-default), #e11d48)'}}><Sparkles size={16} /> Aleatorio</button>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setTheme('light')} className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors`} style={{ backgroundColor: theme === 'light' ? 'var(--action-primary-default)' : 'var(--bg-muted)', color: theme === 'light' ? 'white' : 'var(--text-default)'}}>Modo Claro</button>
-                  <button onClick={() => setTheme('dark')} className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors`} style={{ backgroundColor: theme === 'dark' ? 'var(--action-primary-default)' : 'var(--bg-muted)', color: theme === 'dark' ? 'white' : 'var(--text-default)'}}>Modo Oscuro</button>
-                </div>
-            </section>
-            
-            <AdBanner adKey="b69b0d3e0c5d0d674ead33e20daf57a4" width={728} height={90} />
-
-             <section className="space-y-6 mb-8">
-               <div 
-                 className="p-6 rounded-xl border" 
-                 style={{ backgroundColor: usePureWhiteBg && theme === 'light' ? '#FFFFFF' : (grayShades.length > 9 ? grayShades[9] : '#FFF'), borderColor: grayShades.length > 7 ? grayShades[7] : '#E5E7EB' }}
-               >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="font-bold" style={{color: usePureWhiteBg && theme === 'light' ? '#000' : 'var(--text-default)'}}>Modo Claro</h2>
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm font-medium" style={{color: usePureWhiteBg && theme === 'light' ? '#374151' : 'var(--text-muted)'}}>Fondo Blanco Puro</label>
-                    <Switch checked={usePureWhiteBg} onCheckedChange={setUsePureWhiteBg} />
-                  </div>
-                </div>
-                <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="light"/>
-                <ColorPalette title="Escala de Grises" color={grayColor} hex={grayColor} shades={grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="light"/>
-              </div>
-               <div 
-                 className="p-6 rounded-xl border" 
-                 style={{ backgroundColor: usePureBlackBg && theme === 'dark' ? '#000000' : (grayShades.length > 0 ? grayShades[0] : '#000'), borderColor: grayShades.length > 2 ? grayShades[2] : '#4B5563' }}
-               >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="font-bold text-white">Modo Oscuro</h2>
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm font-medium text-gray-300">Fondo Negro Puro</label>
-                    <Switch checked={usePureBlackBg} onCheckedChange={setUsePureBlackBg} />
-                  </div>
-                </div>
-                <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
-                <ColorPalette title="Escala de Grises" color={grayColor} hex={grayColor} shades={grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
-              </div>
-              <div 
-                 className="p-6 rounded-xl border"
-                 style={{ backgroundColor: grayShades[1], borderColor: grayShades[2] }}
-               >
-                <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
-                    <h2 className="font-bold text-white">Modo Armonía</h2>
+            <section className="p-4 rounded-xl mb-8 border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
                     <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 rounded-lg p-1" style={{backgroundColor: grayShades[2]}}>
-                            <button onClick={() => setHarmonyMode('complementary')} className={`text-xs font-semibold py-1 px-3 rounded-md ${harmonyMode === 'complementary' ? 'text-white' : 'text-gray-300'}`} style={{backgroundColor: harmonyMode === 'complementary' ? brandShades[4] : 'transparent'}}>Complementaria</button>
-                            <button onClick={() => setHarmonyMode('analogous')} className={`text-xs font-semibold py-1 px-3 rounded-md ${harmonyMode === 'analogous' ? 'text-white' : 'text-gray-300'}`} style={{backgroundColor: harmonyMode === 'analogous' ? brandShades[4] : 'transparent'}}>Análoga</button>
-                            <button onClick={() => setHarmonyMode('triadic')} className={`text-xs font-semibold py-1 px-3 rounded-md ${harmonyMode === 'triadic' ? 'text-white' : 'text-gray-300'}`} style={{backgroundColor: harmonyMode === 'triadic' ? brandShades[4] : 'transparent'}}>Triádica</button>
+                        <label className="text-sm" style={{ color: 'var(--text-muted)'}} htmlFor="fontSelector">Fuente:</label>
+                        <select id="fontSelector" value={font} onChange={(e) => setFont(e.target.value)} className="font-semibold px-2 py-1 rounded-md border" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}>
+                            {Object.keys(availableFonts).map(fontName => (<option key={fontName} value={fontName}>{fontName}</option>))}
+                        </select>
+                    </div>
+                    <div className="relative flex items-center gap-2">
+                        <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Color de Marca:</label>
+                        <div className="flex items-center rounded-md" style={{ backgroundColor: 'var(--bg-muted)'}}>
+                            <div className="w-7 h-7 rounded-l-md cursor-pointer border-r" style={{ backgroundColor: brandColor, borderColor: 'var(--border-strong)' }} onClick={() => setIsBrandPickerVisible(!isBrandPickerVisible)}/>
+                            <HexColorInput color={brandColor} onChange={setBrandColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{ color: 'var(--text-default)'}} prefixed/>
                         </div>
-                        <button onClick={handleRandomHarmony} className="p-2 rounded-lg text-white" style={{background: 'linear-gradient(to right, #a855f7, #ec4899)'}} title="Generar Armonía Aleatoria">
-                            <Sparkles size={16}/>
-                        </button>
+                        {isBrandPickerVisible && (<div className="absolute z-10 top-full mt-2 left-0 w-56"><div className="fixed inset-0" onClick={() => setIsBrandPickerVisible(false)} /><HexColorPicker color={brandColor} onChange={setBrandColor} /></div>)}
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2"><Wand2 size={16} style={{ color: 'var(--text-muted)'}}/><label className="text-sm font-medium" style={{ color: 'var(--text-muted)'}}>Gris Automático</label></div>
+                        <Switch checked={isGrayAuto} onCheckedChange={setIsGrayAuto} />
+                    </div>
+                    <div className={`relative flex items-center gap-2 transition-opacity ${isGrayAuto ? 'opacity-50' : 'opacity-100'}`}>
+                        <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Escala de Grises:</label>
+                        <div className="flex items-center rounded-md" style={{ backgroundColor: 'var(--bg-muted)'}}>
+                            <div className={`w-7 h-7 rounded-l-md border-r ${isGrayAuto ? 'cursor-not-allowed' : 'cursor-pointer'}`} style={{ backgroundColor: grayColor, borderColor: 'var(--border-strong)' }} onClick={() => !isGrayAuto && setIsGrayPickerVisible(!isGrayPickerVisible)}/>
+                            <HexColorInput color={grayColor} onChange={setGrayColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{ color: 'var(--text-default)'}} prefixed disabled={isGrayAuto}/>
+                        </div>
+                        {isGrayPickerVisible && !isGrayAuto && (<div className="absolute z-10 top-full mt-2 right-0 w-56"><div className="fixed inset-0" onClick={() => setIsGrayPickerVisible(false)} /><HexColorPicker color={grayColor} onChange={setGrayColor} /></div>)}
+                    </div>
+                    <button onClick={handleRandomTheme} className="text-sm font-medium py-2 px-4 rounded-lg transition-colors text-white hover:opacity-90 flex items-center gap-2" style={{ background: 'linear-gradient(to right, var(--action-primary-default), #e11d48)'}}><Sparkles size={16} /> Aleatorio</button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setTheme('light')} className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors`} style={{ backgroundColor: theme === 'light' ? 'var(--action-primary-default)' : 'var(--bg-muted)', color: theme === 'light' ? 'white' : 'var(--text-default)'}}>Modo Claro</button>
+                        <button onClick={() => setTheme('dark')} className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors`} style={{ backgroundColor: theme === 'dark' ? 'var(--action-primary-default)' : 'var(--bg-muted)', color: theme === 'dark' ? 'white' : 'var(--text-default)'}}>Modo Oscuro</button>
+                    </div>
+                    
+                    <div className="hidden lg:block h-6 w-px bg-[var(--border-default)]"></div>
+
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Accesibilidad:</label>
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1" title={`Contraste del Botón: ${accessibility.btn.ratio}:1`}>
+                                <span className="text-xs font-bold p-1 rounded w-12 text-center" style={{backgroundColor: accessibility.btn.level === 'Fallido' ? '#fecaca' : '#bbf7d0', color: accessibility.btn.level === 'Fallido' ? '#991b1b' : '#166534'}}>{accessibility.btn.level}</span>
+                                <span className="text-xs" style={{color: 'var(--text-muted)'}}>Botón</span>
+                            </div>
+                            <div className="flex items-center gap-1" title={`Contraste del Texto: ${accessibility.text.ratio}:1`}>
+                                <span className="text-xs font-bold p-1 rounded w-12 text-center" style={{backgroundColor: accessibility.text.level === 'Fallido' ? '#fecaca' : '#bbf7d0', color: accessibility.text.level === 'Fallido' ? '#991b1b' : '#166534'}}>{accessibility.text.level}</span>
+                                <span className="text-xs" style={{color: 'var(--text-muted)'}}>Texto</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm" style={{ color: 'var(--text-muted)'}} htmlFor="simSelectorTop">Simulador:</label>
+                        <select id="simSelectorTop" value={simulationMode} onChange={(e) => setSimulationMode(e.target.value)} className="font-semibold px-2 py-1 rounded-md border" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}>
+                            <option value="none">Ninguno</option>
+                            <option value="protanopia">Protanopia</option>
+                            <option value="deuteranopia">Deuteranopia</option>
+                            <option value="tritanopia">Tritanopia</option>
+                        </select>
                     </div>
                 </div>
-                <ColorPalette title="Color de Acento" color={harmonyPalettes.accentColor} hex={harmonyPalettes.accentColor} shades={harmonyPalettes.accentShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
-                <ColorPalette title="Escala de Grises Armónica" color={harmonyPalettes.gray} hex={harmonyPalettes.gray} shades={harmonyPalettes.grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
-              </div>
-            </section>
-
-            <AdBanner adKey="654e6b72753482c0e1b9cb525d4eef56" width={468} height={60} />
-
-            <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-               <StyleCard title="Tipografía">{Object.entries(displayStylesConfig).map(([name, styles]) => (<div key={name} className="mb-2 truncate"><span style={{ fontSize: styles.fontSize, fontWeight: styles.fontWeight, color: 'var(--text-muted)' }}>{name}</span></div>))}</StyleCard>
-              <StyleCard title="Fondos">{stylePalette.fullBackgroundColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
-              <StyleCard title="Textos">{stylePalette.fullForegroundColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
-              <StyleCard title="Bordes">{stylePalette.fullBorderColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
-              <StyleCard title="Acciones">{stylePalette.fullActionColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
-              <StyleCard title="Decorativos">{stylePalette.decorateColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
             </section>
             
             <section className="p-4 rounded-xl border mb-8" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
@@ -820,41 +781,128 @@ function App() {
                     </div>
                 )}
             </section>
-            
-            <section className="p-6 rounded-xl border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
-                <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
-                    <div className="flex-1 min-w-[250px]">
-                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2" style={{ color: 'var(--text-default)'}}><Eye size={20}/> Vista Previa</h3>
-                        <div className="space-y-4">
-                          <button className="w-full text-white font-bold py-2 px-4 rounded-lg transition-colors" style={{ backgroundColor: 'var(--action-primary-default)'}}>Botón Primario</button>
-                          <button className="w-full font-bold py-2 px-4 rounded-lg transition-colors border" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-default)', borderColor: 'var(--border-strong)'}}>Botón Secundario</button>
+
+             <section className="space-y-6 mb-8">
+               <div 
+                 className="p-6 rounded-xl border" 
+                 style={{ backgroundColor: usePureWhiteBg && theme === 'light' ? '#FFFFFF' : (grayShades.length > 9 ? grayShades[9] : '#FFF'), borderColor: grayShades.length > 7 ? grayShades[7] : '#E5E7EB' }}
+               >
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="font-bold" style={{color: usePureWhiteBg && theme === 'light' ? '#000' : 'var(--text-default)'}}>Modo Claro</h2>
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium" style={{color: usePureWhiteBg && theme === 'light' ? '#374151' : 'var(--text-muted)'}}>Fondo Blanco Puro</label>
+                    <Switch checked={usePureWhiteBg} onCheckedChange={setUsePureWhiteBg} />
+                  </div>
+                </div>
+                <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="light"/>
+                <ColorPalette title="Escala de Grises" color={grayColor} hex={grayColor} shades={grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="light"/>
+              </div>
+               <div 
+                 className="p-6 rounded-xl border" 
+                 style={{ backgroundColor: usePureBlackBg && theme === 'dark' ? '#000000' : (grayShades.length > 0 ? grayShades[0] : '#000'), borderColor: grayShades.length > 2 ? grayShades[2] : '#4B5563' }}
+               >
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="font-bold text-white">Modo Oscuro</h2>
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-gray-300">Fondo Negro Puro</label>
+                    <Switch checked={usePureBlackBg} onCheckedChange={setUsePureBlackBg} />
+                  </div>
+                </div>
+                <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
+                <ColorPalette title="Escala de Grises" color={grayColor} hex={grayColor} shades={grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
+              </div>
+              <div 
+                 className="p-6 rounded-xl border"
+                 style={{ backgroundColor: grayShades[1], borderColor: grayShades[2] }}
+               >
+                <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+                    <h2 className="font-bold text-white">Modo Armonía</h2>
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 rounded-lg p-1" style={{backgroundColor: grayShades[2]}}>
+                            <button onClick={() => setHarmonyMode('complementary')} className={`text-xs font-semibold py-1 px-3 rounded-md ${harmonyMode === 'complementary' ? 'text-white' : 'text-gray-300'}`} style={{backgroundColor: harmonyMode === 'complementary' ? brandShades[4] : 'transparent'}}>Complementaria</button>
+                            <button onClick={() => setHarmonyMode('analogous')} className={`text-xs font-semibold py-1 px-3 rounded-md ${harmonyMode === 'analogous' ? 'text-white' : 'text-gray-300'}`} style={{backgroundColor: harmonyMode === 'analogous' ? brandShades[4] : 'transparent'}}>Análoga</button>
+                            <button onClick={() => setHarmonyMode('triadic')} className={`text-xs font-semibold py-1 px-3 rounded-md ${harmonyMode === 'triadic' ? 'text-white' : 'text-gray-300'}`} style={{backgroundColor: harmonyMode === 'triadic' ? brandShades[4] : 'transparent'}}>Triádica</button>
                         </div>
-                    </div>
-                    <div className="flex-1 min-w-[250px] space-y-4">
-                        <h3 className="font-bold text-lg mb-4" style={{ color: 'var(--text-default)'}}>Accesibilidad</h3>
-                        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--bg-muted)', borderColor: 'var(--border-strong)'}}>
-                            <h4 className="font-semibold mb-2 text-sm" style={{ color: 'var(--text-default)'}}>Ratio de Contraste</h4>
-                            <div className="flex items-center gap-2 mb-1"><span className="text-xs font-bold p-1 rounded w-12 text-center" style={{backgroundColor: accessibility.btn.level === 'Fallido' ? '#fecaca' : '#bbf7d0', color: accessibility.btn.level === 'Fallido' ? '#991b1b' : '#166534'}}>{accessibility.btn.level}</span><span className="text-sm" style={{ color: 'var(--text-muted)'}}>Botón ({accessibility.btn.ratio}:1)</span></div>
-                            <div className="flex items-center gap-2"><span className="text-xs font-bold p-1 rounded w-12 text-center" style={{backgroundColor: accessibility.text.level === 'Fallido' ? '#fecaca' : '#bbf7d0', color: accessibility.text.level === 'Fallido' ? '#991b1b' : '#166534'}}>{accessibility.text.level}</span><span className="text-sm" style={{ color: 'var(--text-muted)'}}>Texto ({accessibility.text.ratio}:1)</span></div>
-                        </div>
-                        <div>
-                            <label htmlFor="sim-selector" className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)'}}>Simulador de Daltonismo</label>
-                            <select id="sim-selector" value={simulationMode} onChange={(e) => setSimulationMode(e.target.value)} className="w-full font-semibold px-2 py-2 rounded-md border" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}>
-                                <option value="none">Ninguno</option>
-                                <option value="protanopia">Protanopia (Rojo-débil)</option>
-                                <option value="deuteranopia">Deuteranopia (Verde-débil)</option>
-                                <option value="tritanopia">Tritanopia (Azul-débil)</option>
-                            </select>
-                        </div>
+                        <button onClick={handleRandomHarmony} className="p-2 rounded-lg text-white" style={{background: 'linear-gradient(to right, #a855f7, #ec4899)'}} title="Generar Armonía Aleatoria">
+                            <Sparkles size={16}/>
+                        </button>
                     </div>
                 </div>
+                <ColorPalette title="Color de Acento" color={harmonyPalettes.accentColor} hex={harmonyPalettes.accentColor} shades={harmonyPalettes.accentShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
+                <ColorPalette title="Escala de Grises Armónica" color={harmonyPalettes.gray} hex={harmonyPalettes.gray} shades={harmonyPalettes.grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
+              </div>
+            </section>
+
+            <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+               <StyleCard title="Tipografía">{Object.entries(displayStylesConfig).map(([name, styles]) => (<div key={name} className="mb-2 truncate"><span style={{ fontSize: styles.fontSize, fontWeight: styles.fontWeight, color: 'var(--text-muted)' }}>{name}</span></div>))}</StyleCard>
+              <StyleCard title="Fondos">{stylePalette.fullBackgroundColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
+              <StyleCard title="Textos">{stylePalette.fullForegroundColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
+              <StyleCard title="Bordes">{stylePalette.fullBorderColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
+              <StyleCard title="Acciones">{stylePalette.fullActionColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
+              <StyleCard title="Decorativos">{stylePalette.decorateColors.map(item => <StyleItem key={item.name} name={item.name} color={item.color} onColorCopy={(color) => handleCopy(color, `Color ${color.toUpperCase()} copiado!`)} />)}</StyleCard>
             </section>
             
+            <section className="p-4 rounded-xl border mb-8" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
+                <div className="flex justify-between items-center mb-2">
+                    <h2 className="font-bold text-lg flex items-center gap-2" style={{ color: 'var(--text-default)'}}>
+                        <Eye size={20} /> Vista Previa de Componentes
+                    </h2>
+                    <button 
+                        onClick={() => setIsComponentPreviewVisible(!isComponentPreviewVisible)}
+                        className="text-sm font-medium py-1 px-3 rounded-lg"
+                        style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}
+                    >
+                        {isComponentPreviewVisible ? 'Ocultar' : 'Mostrar'}
+                    </button>
+                </div>
+
+                {isComponentPreviewVisible && (
+                     <div className="mt-4 pt-4 border-t" style={{borderColor: 'var(--border-default)'}}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Columna Izquierda */}
+                            <div className="space-y-6">
+                                {/* Card */}
+                                <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--bg-muted)', borderColor: 'var(--border-strong)'}}>
+                                    <h4 className="font-bold mb-2" style={{ color: 'var(--text-default)'}}>Título de la Tarjeta</h4>
+                                    <p className="text-sm" style={{ color: 'var(--text-muted)'}}>Este es un ejemplo de cómo se ve el texto dentro de una tarjeta.</p>
+                                </div>
+                                {/* Inputs */}
+                                <div className="space-y-3">
+                                    <input type="text" placeholder="Campo de texto normal" className="w-full px-3 py-2 rounded-md border text-sm" style={{ backgroundColor: 'var(--bg-muted)', borderColor: 'var(--border-default)', color: 'var(--text-default)'}} />
+                                    <input type="text" placeholder="Campo de texto con borde fuerte" className="w-full px-3 py-2 rounded-md border-2 text-sm" style={{ backgroundColor: 'var(--bg-muted)', borderColor: 'var(--action-primary-default)', color: 'var(--text-default)'}} />
+                                </div>
+                                {/* Botones */}
+                                <div className="space-y-3">
+                                    <button className="w-full text-white font-bold py-2 px-4 rounded-lg transition-colors" style={{ backgroundColor: 'var(--action-primary-default)'}}>Botón Primario</button>
+                                    <button className="w-full font-bold py-2 px-4 rounded-lg transition-colors border" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-default)', borderColor: 'var(--border-strong)'}}>Botón Secundario</button>
+                                </div>
+                            </div>
+                            {/* Columna Derecha */}
+                            <div className="space-y-3">
+                                <h4 className="font-bold text-md" style={{ color: 'var(--text-default)'}}>Alertas</h4>
+                                <div className="flex items-center p-3 rounded-md" style={{backgroundColor: 'var(--bg-info-weak)'}}>
+                                    <Info size={20} style={{color: 'var(--text-info)', minWidth: '20px'}} className="mr-3"/>
+                                    <p className="text-sm font-medium" style={{color: 'var(--text-info)'}}>Esto es una notificación de información.</p>
+                                </div>
+                                <div className="flex items-center p-3 rounded-md" style={{backgroundColor: 'var(--bg-success-weak)'}}>
+                                    <CheckCircle size={20} style={{color: 'var(--text-success)', minWidth: '20px'}} className="mr-3"/>
+                                    <p className="text-sm font-medium" style={{color: 'var(--text-success)'}}>¡La operación se completó con éxito!</p>
+                                </div>
+                                <div className="flex items-center p-3 rounded-md" style={{backgroundColor: 'var(--bg-attention-weak)'}}>
+                                    <AlertTriangle size={20} style={{color: 'var(--text-attention)', minWidth: '20px'}} className="mr-3"/>
+                                    <p className="text-sm font-medium" style={{color: 'var(--text-attention)'}}>Atención: esto requiere tu revisión.</p>
+                                </div>
+                                <div className="flex items-center p-3 rounded-md" style={{backgroundColor: 'var(--bg-critical-weak)'}}>
+                                    <AlertCircle size={20} style={{color: 'var(--text-critical)', minWidth: '20px'}} className="mr-3"/>
+                                    <p className="text-sm font-medium" style={{color: 'var(--text-critical)'}}>Error: algo salió mal.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </section>
         </main>
         <footer className="text-center mt-12 pt-8 border-t" style={{ borderColor: 'var(--border-default)', color: 'var(--text-muted)'}}>
-            {/* --- CONTENEDOR DE PUBLICIDAD (Footer) --- */}
-            <div id="container-b1bcdef33e26ff258cea985fafbdf8da" className="mb-4"></div>
-            
             <p className="text-sm">Creado por JD_DM.</p>
             <p className="text-xs mt-1">Un proyecto de código abierto para la comunidad de Power Apps.</p>
         </footer>
