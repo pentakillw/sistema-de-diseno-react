@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import tinycolor from 'tinycolor2';
-import { Sparkles, Wand2, HelpCircle, X, Check, Clipboard, Download, Upload, AlertCircle, RefreshCcw, FileCode, Eye, Palette, Settings, Info, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Sparkles, Wand2, HelpCircle, X, Check, Clipboard, Download, Upload, AlertCircle, RefreshCcw, FileCode, Eye, Palette, Settings, Info, CheckCircle, AlertTriangle, Sun, Moon } from 'lucide-react';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
 
 // --- Funciones de Utilidad de Colores (lógica interna en inglés) ---
@@ -289,6 +289,28 @@ const HelpModal = ({ onClose }) => (
                 </div>
             </div>
         </div>
+    </div>
+);
+
+// --- Componente de Botones Flotantes ---
+const FloatingActionButtons = ({ onRandomClick, onThemeToggle, currentTheme }) => (
+    <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-4">
+      <button
+        onClick={onRandomClick}
+        className="h-14 w-14 rounded-full text-white flex items-center justify-center shadow-lg transform transition-all duration-200 hover:shadow-xl hover:-translate-y-1"
+        style={{ background: 'linear-gradient(to right, var(--action-primary-default), #e11d48)' }}
+        title="Generar Tema Aleatorio"
+      >
+        <Sparkles size={24} />
+      </button>
+      <button
+        onClick={onThemeToggle}
+        className="h-14 w-14 rounded-full flex items-center justify-center shadow-lg transform transition-all duration-200 hover:shadow-xl hover:-translate-y-1"
+        style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-default)', border: '1px solid var(--border-default)' }}
+        title={currentTheme === 'light' ? 'Cambiar a Modo Oscuro' : 'Cambiar a Modo Claro'}
+      >
+        {currentTheme === 'light' ? <Moon size={24} /> : <Sun size={24} />}
+      </button>
     </div>
 );
 
@@ -627,6 +649,10 @@ function App() {
     setGrayColor(defaultState.grayColor);
     showNotification("Tema reiniciado a los valores por defecto.");
   };
+
+  const handleThemeToggle = () => {
+    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+  };
   
   if (!stylePalette || !harmonies || !harmonyPalettes) {
     return (
@@ -651,8 +677,14 @@ function App() {
         style={{ fontFamily: availableFonts[font], backgroundColor: 'var(--bg-default)', color: 'var(--text-default)', filter: simulationMode !== 'none' ? `url(#${simulationMode})` : 'none' }}
       >
         {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
-        <header className="relative flex justify-between items-center mb-4">
-             <img src="https://raw.githubusercontent.com/pentakillw/sistema-de-diseno-react/main/Icono_FX.png" alt="Sistema FX Logo" className="h-12 w-12"/>
+        <header className="relative flex justify-between items-center mb-8">
+             <div className="flex items-center gap-4">
+                <img src="https://raw.githubusercontent.com/pentakillw/sistema-de-diseno-react/main/Icono_FX.png" alt="Sistema FX Logo" className="h-24 w-24 rounded-2xl shadow-md"/>
+                <div>
+                    <h1 className="text-3xl font-bold" style={{ color: 'var(--text-default)'}}>BIENVENIDOS</h1>
+                    <p className="text-md" style={{ color: 'var(--text-muted)'}}>al sistema de diseño para Power Apps</p>
+                </div>
+            </div>
             <div className="flex items-center gap-2">
                 <input type="file" ref={importFileRef} onChange={handleImport} accept=".json" className="hidden"/>
                 <button title="Reiniciar Tema" onClick={handleReset} className="text-sm font-medium p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}><RefreshCcw size={16}/></button>
@@ -661,71 +693,65 @@ function App() {
                 <button title="Ayuda" onClick={() => setIsHelpVisible(true)} className="text-sm font-medium p-2 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}><HelpCircle size={16}/></button>
             </div>
         </header>
-        <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold" style={{ color: 'var(--text-default)'}}>Bienvenidos al sistema de diseño para Power Apps</h1>
-        </div>
 
         <main>
-            <section className="p-4 rounded-xl mb-8 border" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
-                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
-                    <div className="flex items-center gap-2">
-                        <label className="text-sm" style={{ color: 'var(--text-muted)'}} htmlFor="fontSelector">Fuente:</label>
-                        <select id="fontSelector" value={font} onChange={(e) => setFont(e.target.value)} className="font-semibold px-2 py-1 rounded-md border" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}>
-                            {Object.keys(availableFonts).map(fontName => (<option key={fontName} value={fontName}>{fontName}</option>))}
-                        </select>
-                    </div>
-                    <div className="relative flex items-center gap-2">
-                        <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Color de Marca:</label>
-                        <div className="flex items-center rounded-md" style={{ backgroundColor: 'var(--bg-muted)'}}>
-                            <div className="w-7 h-7 rounded-l-md cursor-pointer border-r" style={{ backgroundColor: brandColor, borderColor: 'var(--border-strong)' }} onClick={() => setIsBrandPickerVisible(!isBrandPickerVisible)}/>
-                            <HexColorInput color={brandColor} onChange={setBrandColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{ color: 'var(--text-default)'}} prefixed/>
-                        </div>
-                        {isBrandPickerVisible && (<div className="absolute z-10 top-full mt-2 left-0 w-56"><div className="fixed inset-0" onClick={() => setIsBrandPickerVisible(false)} /><HexColorPicker color={brandColor} onChange={setBrandColor} /></div>)}
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2"><Wand2 size={16} style={{ color: 'var(--text-muted)'}}/><label className="text-sm font-medium" style={{ color: 'var(--text-muted)'}}>Gris Automático</label></div>
-                        <Switch checked={isGrayAuto} onCheckedChange={setIsGrayAuto} />
-                    </div>
-                    <div className={`relative flex items-center gap-2 transition-opacity ${isGrayAuto ? 'opacity-50' : 'opacity-100'}`}>
-                        <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Escala de Grises:</label>
-                        <div className="flex items-center rounded-md" style={{ backgroundColor: 'var(--bg-muted)'}}>
-                            <div className={`w-7 h-7 rounded-l-md border-r ${isGrayAuto ? 'cursor-not-allowed' : 'cursor-pointer'}`} style={{ backgroundColor: grayColor, borderColor: 'var(--border-strong)' }} onClick={() => !isGrayAuto && setIsGrayPickerVisible(!isGrayPickerVisible)}/>
-                            <HexColorInput color={grayColor} onChange={setGrayColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{ color: 'var(--text-default)'}} prefixed disabled={isGrayAuto}/>
-                        </div>
-                        {isGrayPickerVisible && !isGrayAuto && (<div className="absolute z-10 top-full mt-2 right-0 w-56"><div className="fixed inset-0" onClick={() => setIsGrayPickerVisible(false)} /><HexColorPicker color={grayColor} onChange={setGrayColor} /></div>)}
-                    </div>
-                    <button onClick={handleRandomTheme} className="text-sm font-medium py-2 px-4 rounded-lg transition-colors text-white hover:opacity-90 flex items-center gap-2" style={{ background: 'linear-gradient(to right, var(--action-primary-default), #e11d48)'}}><Sparkles size={16} /> Aleatorio</button>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setTheme('light')} className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors`} style={{ backgroundColor: theme === 'light' ? 'var(--action-primary-default)' : 'var(--bg-muted)', color: theme === 'light' ? 'white' : 'var(--text-default)'}}>Modo Claro</button>
-                        <button onClick={() => setTheme('dark')} className={`text-sm font-medium py-2 px-4 rounded-lg transition-colors`} style={{ backgroundColor: theme === 'dark' ? 'var(--action-primary-default)' : 'var(--bg-muted)', color: theme === 'dark' ? 'white' : 'var(--text-default)'}}>Modo Oscuro</button>
-                    </div>
-                    
-                    <div className="hidden lg:block h-6 w-px bg-[var(--border-default)]"></div>
-
-                    <div className="flex items-center gap-2">
-                        <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Accesibilidad:</label>
+            <div className="sticky top-4 z-40 mb-8">
+                <section className="p-4 rounded-xl border shadow-lg" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
+                    <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
                         <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1" title={`Contraste del Botón: ${accessibility.btn.ratio}:1`}>
-                                <span className="text-xs font-bold p-1 rounded w-12 text-center" style={{backgroundColor: accessibility.btn.level === 'Fallido' ? '#fecaca' : '#bbf7d0', color: accessibility.btn.level === 'Fallido' ? '#991b1b' : '#166534'}}>{accessibility.btn.level}</span>
-                                <span className="text-xs" style={{color: 'var(--text-muted)'}}>Botón</span>
+                            <label className="text-sm" style={{ color: 'var(--text-muted)'}} htmlFor="fontSelector">Fuente:</label>
+                            <select id="fontSelector" value={font} onChange={(e) => setFont(e.target.value)} className="font-semibold px-2 py-1 rounded-md border" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}>
+                                {Object.keys(availableFonts).map(fontName => (<option key={fontName} value={fontName}>{fontName}</option>))}
+                            </select>
+                        </div>
+                        <div className="relative flex items-center gap-2">
+                            <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Color de Marca:</label>
+                            <div className="flex items-center rounded-md" style={{ backgroundColor: 'var(--bg-muted)'}}>
+                                <div className="w-7 h-7 rounded-l-md cursor-pointer border-r" style={{ backgroundColor: brandColor, borderColor: 'var(--border-strong)' }} onClick={() => setIsBrandPickerVisible(!isBrandPickerVisible)}/>
+                                <HexColorInput color={brandColor} onChange={setBrandColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{ color: 'var(--text-default)'}} prefixed/>
                             </div>
-                            <div className="flex items-center gap-1" title={`Contraste del Texto: ${accessibility.text.ratio}:1`}>
-                                <span className="text-xs font-bold p-1 rounded w-12 text-center" style={{backgroundColor: accessibility.text.level === 'Fallido' ? '#fecaca' : '#bbf7d0', color: accessibility.text.level === 'Fallido' ? '#991b1b' : '#166534'}}>{accessibility.text.level}</span>
-                                <span className="text-xs" style={{color: 'var(--text-muted)'}}>Texto</span>
+                            {isBrandPickerVisible && (<div className="absolute z-10 top-full mt-2 left-0 w-56"><div className="fixed inset-0" onClick={() => setIsBrandPickerVisible(false)} /><HexColorPicker color={brandColor} onChange={setBrandColor} /></div>)}
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2"><Wand2 size={16} style={{ color: 'var(--text-muted)'}}/><label className="text-sm font-medium" style={{ color: 'var(--text-muted)'}}>Gris Automático</label></div>
+                            <Switch checked={isGrayAuto} onCheckedChange={setIsGrayAuto} />
+                        </div>
+                        <div className={`relative flex items-center gap-2 transition-opacity ${isGrayAuto ? 'opacity-50' : 'opacity-100'}`}>
+                            <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Escala de Grises:</label>
+                            <div className="flex items-center rounded-md" style={{ backgroundColor: 'var(--bg-muted)'}}>
+                                <div className={`w-7 h-7 rounded-l-md border-r ${isGrayAuto ? 'cursor-not-allowed' : 'cursor-pointer'}`} style={{ backgroundColor: grayColor, borderColor: 'var(--border-strong)' }} onClick={() => !isGrayAuto && setIsGrayPickerVisible(!isGrayPickerVisible)}/>
+                                <HexColorInput color={grayColor} onChange={setGrayColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{ color: 'var(--text-default)'}} prefixed disabled={isGrayAuto}/>
+                            </div>
+                            {isGrayPickerVisible && !isGrayAuto && (<div className="absolute z-10 top-full mt-2 right-0 w-56"><div className="fixed inset-0" onClick={() => setIsGrayPickerVisible(false)} /><HexColorPicker color={grayColor} onChange={setGrayColor} /></div>)}
+                        </div>
+                        
+                        <div className="hidden lg:block h-6 w-px bg-[var(--border-default)]"></div>
+
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm" style={{ color: 'var(--text-muted)'}}>Accesibilidad:</label>
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1" title={`Contraste del Botón: ${accessibility.btn.ratio}:1`}>
+                                    <span className="text-xs font-bold p-1 rounded w-12 text-center" style={{backgroundColor: accessibility.btn.level === 'Fallido' ? '#fecaca' : '#bbf7d0', color: accessibility.btn.level === 'Fallido' ? '#991b1b' : '#166534'}}>{accessibility.btn.level}</span>
+                                    <span className="text-xs" style={{color: 'var(--text-muted)'}}>Botón</span>
+                                </div>
+                                <div className="flex items-center gap-1" title={`Contraste del Texto: ${accessibility.text.ratio}:1`}>
+                                    <span className="text-xs font-bold p-1 rounded w-12 text-center" style={{backgroundColor: accessibility.text.level === 'Fallido' ? '#fecaca' : '#bbf7d0', color: accessibility.text.level === 'Fallido' ? '#991b1b' : '#166534'}}>{accessibility.text.level}</span>
+                                    <span className="text-xs" style={{color: 'var(--text-muted)'}}>Texto</span>
+                                </div>
                             </div>
                         </div>
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm" style={{ color: 'var(--text-muted)'}} htmlFor="simSelectorTop">Simulador:</label>
+                            <select id="simSelectorTop" value={simulationMode} onChange={(e) => setSimulationMode(e.target.value)} className="font-semibold px-2 py-1 rounded-md border" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}>
+                                <option value="none">Ninguno</option>
+                                <option value="protanopia">Protanopia</option>
+                                <option value="deuteranopia">Deuteranopia</option>
+                                <option value="tritanopia">Tritanopia</option>
+                            </select>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-sm" style={{ color: 'var(--text-muted)'}} htmlFor="simSelectorTop">Simulador:</label>
-                        <select id="simSelectorTop" value={simulationMode} onChange={(e) => setSimulationMode(e.target.value)} className="font-semibold px-2 py-1 rounded-md border" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)', borderColor: 'var(--border-default)'}}>
-                            <option value="none">Ninguno</option>
-                            <option value="protanopia">Protanopia</option>
-                            <option value="deuteranopia">Deuteranopia</option>
-                            <option value="tritanopia">Tritanopia</option>
-                        </select>
-                    </div>
-                </div>
-            </section>
+                </section>
+            </div>
             
             <section className="p-4 rounded-xl border mb-8" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)'}}>
                 <div className="flex justify-between items-center mb-2">
@@ -907,6 +933,11 @@ function App() {
             <p className="text-xs mt-1">Un proyecto de código abierto para la comunidad de Power Apps.</p>
         </footer>
         {notification.message && (<div className="fixed bottom-5 right-5 text-white text-sm font-bold py-2 px-4 rounded-lg shadow-lg flex items-center gap-2" style={{ backgroundColor: notification.type === 'error' ? '#EF4444' : '#10B981'}}><Check size={16}/> {notification.message}</div>)}
+        <FloatingActionButtons 
+            onRandomClick={handleRandomTheme}
+            onThemeToggle={handleThemeToggle}
+            currentTheme={theme}
+        />
       </div>
     </>
   );
