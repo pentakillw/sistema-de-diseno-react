@@ -176,6 +176,127 @@ ${formatShades(grayShades)}
 
 // --- Componentes ---
 
+// --- Modal de Variaciones ---
+const VariationsModal = ({ brandColor, onClose, onColorSelect }) => {
+  const variationTabs = {
+    'Sombra': {
+      label: (i) => {
+        const value = (9 - i) * 10;
+        if (value === 0) return 'Original';
+        return `${value > 0 ? '+' : ''}${value}%`;
+      },
+      generator: (base, i) => {
+        const amount = (9 - i) * 10; // de +90 a -90
+        return amount >= 0 ? base.clone().lighten(amount).toHexString() : base.clone().darken(Math.abs(amount)).toHexString();
+      }
+    },
+    'Saturación': {
+      label: (i) => {
+        const value = (9 - i) * 10;
+        if (value === 0) return 'Original';
+        return `${value > 0 ? '+' : ''}${value}%`;
+      },
+      generator: (base, i) => {
+        const amount = (9 - i) * 10;
+        return amount >= 0 ? base.clone().saturate(amount).toHexString() : base.clone().desaturate(Math.abs(amount)).toHexString();
+      }
+    },
+    'Matiz': {
+      label: (i) => {
+        const value = (i - 9) * 20;
+        if (value === 0) return 'Original';
+        return `${value}°`;
+      },
+      generator: (base, i) => {
+        const amount = (i - 9) * 20; // de -180 a +180
+        return base.clone().spin(amount).toHexString();
+      }
+    },
+    'Temperatura': {
+      label: (i) => {
+        const value = (9 - i) * 10;
+        if (value === 0) return 'Original';
+        return `${value > 0 ? '+' : ''}${value}%`;
+      },
+      generator: (base, i) => {
+        const amount = (9 - i) * 10;
+        if (amount > 0) return tinycolor.mix(base, '#ffc966', amount / 2).toHexString(); // Cálido
+        return tinycolor.mix(base, '#66b3ff', Math.abs(amount / 2)).toHexString(); // Frío
+      }
+    },
+  };
+
+  const tabNames = Object.keys(variationTabs);
+  const [activeTab, setActiveTab] = useState(tabNames[0]);
+  
+  const base = tinycolor(brandColor);
+  const currentPalette = Array.from({ length: 19 }).map((_, i) => ({
+    color: variationTabs[activeTab].generator(base, i),
+    label: variationTabs[activeTab].label(i)
+  }));
+
+  const handleSelect = (color) => {
+    onColorSelect(color);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div 
+        className="p-6 rounded-xl border max-w-4xl w-full relative flex flex-col" 
+        style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)', height: '90vh' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
+          <h2 className="text-xl font-bold" style={{ color: 'var(--text-default)' }}>Variaciones de Paleta</h2>
+          <button onClick={onClose} style={{ color: 'var(--text-muted)' }}>
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="flex border-b flex-shrink-0" style={{ borderColor: 'var(--border-default)' }}>
+          {tabNames.map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`py-2 px-4 text-sm font-semibold -mb-px border-b-2 ${activeTab === tab ? 'border-[var(--action-primary-default)] text-[var(--action-primary-default)]' : 'border-transparent text-[var(--text-muted)]'}`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto mt-6 pr-2">
+          <div className="flex gap-x-6">
+            <div className="flex flex-col items-end gap-1">
+              {currentPalette.map((item, index) => (
+                 <div key={index} className="h-12 flex items-center">
+                    <span className="text-xs font-mono" style={{color: 'var(--text-muted)'}}>{item.label}</span>
+                 </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 gap-1 flex-1">
+              {currentPalette.map((item, index) => (
+                <div 
+                  key={index} 
+                  className="w-full h-12 rounded-md cursor-pointer group flex items-center justify-end px-4 transition-all duration-150 hover:shadow-lg hover:scale-[1.02]" 
+                  style={{backgroundColor: item.color}}
+                  onClick={() => handleSelect(item.color)}
+                >
+                  <span className="font-mono text-sm opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: tinycolor(item.color).isLight() ? '#000' : '#FFF' }}>
+                    {item.color.toUpperCase()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const AccessibilityCard = ({ accessibility, colors, isVisible, onToggle }) => {
   const cardStyle = {
     backgroundColor: 'var(--bg-card)',
@@ -494,6 +615,7 @@ function App() {
   const [isBrandPickerVisible, setIsBrandPickerVisible] = useState(false);
   const [isGrayPickerVisible, setIsGrayPickerVisible] = useState(false);
   const [isHelpVisible, setIsHelpVisible] = useState(false);
+  const [isVariationsVisible, setIsVariationsVisible] = useState(false);
   
   const [accessibility, setAccessibility] = useState({ btn: { ratio: 0, level: 'Fail'}, text: { ratio: 0, level: 'Fail'} });
   const [accessibilityColors, setAccessibilityColors] = useState({
@@ -1139,15 +1261,18 @@ function App() {
             </section>
              <section className="space-y-6 mb-8">
                <div className="p-4 sm:p-6 rounded-xl border" style={{ backgroundColor: colorModeBg, borderColor: grayShades.length > 2 ? grayShades[2] : '#4B5563' }}>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
-                        <div className="text-center sm:text-left w-full sm:w-auto">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                        <div className="flex-1 min-w-0">
                             <h2 className="font-bold text-lg" style={{ color: tinycolor(colorModeBg).isLight() ? '#000' : '#FFF' }}>Modo Color</h2>
-                            <p className="text-sm mt-1" style={{ color: tinycolor(colorModeBg).isLight() ? '#4B5563' : '#9CA3AF' }}>Toca un color para usarlo como Color de Marca.</p>
+                            <p className="text-sm mt-1 truncate" style={{ color: tinycolor(colorModeBg).isLight() ? '#4B5563' : '#9CA3AF' }}>Toca un color para usarlo como Color de Marca.</p>
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-4">
-                            <span className="text-xs font-mono p-1 rounded-md" style={{ backgroundColor: 'rgba(0,0,0,0.1)', color: tinycolor(colorModeBg).isLight() ? '#000' : '#FFF' }}>{backgroundModeLabels[colorModePreview]}</span>
-                            <button onClick={() => cyclePreviewMode(colorModePreview, setColorModePreview, ['white', 'T950', 'black', 'T0', 'default'])} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: tinycolor(colorModeBg).isLight() ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', color: tinycolor(colorModeBg).isLight() ? '#000' : '#FFF' }}>
+                        <div className="flex items-center flex-wrap justify-end gap-2">
+                           <span className="text-xs font-mono p-1 rounded-md" style={{ backgroundColor: 'rgba(0,0,0,0.1)', color: tinycolor(colorModeBg).isLight() ? '#000' : '#FFF' }}>{backgroundModeLabels[colorModePreview]}</span>
+                            <button onClick={() => cyclePreviewMode(colorModePreview, setColorModePreview, ['white', 'T950', 'black', 'T0', 'default'])} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}>
                                <Layers size={14}/> Alternar Fondo
+                            </button>
+                             <button onClick={() => setIsVariationsVisible(true)} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)' }}>
+                                <Palette size={14} /> Variaciones
                             </button>
                              <div className="relative">
                                 <button onClick={() => setIsMethodSelectorVisible(!isMethodSelectorVisible)} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)' }}>
@@ -1286,6 +1411,11 @@ function App() {
             currentTheme={theme}
         />
         {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
+        {isVariationsVisible && <VariationsModal 
+            brandColor={brandColor}
+            onClose={() => setIsVariationsVisible(false)}
+            onColorSelect={setBrandColor}
+        />}
       </div>
     </>
   );
