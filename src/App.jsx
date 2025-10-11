@@ -177,73 +177,63 @@ ${formatShades(grayShades)}
 // --- Componentes ---
 
 // --- Modal de Variaciones ---
-const VariationsModal = ({ brandColor, onClose, onColorSelect }) => {
-  const variationTabs = {
+const VariationsModal = ({ explorerPalette, onClose, onColorSelect }) => {
+  const variationGenerators = {
     'Sombra': {
-      label: (i) => {
-        const value = (9 - i) * 10;
-        if (value === 0) return 'Original';
-        return `${value > 0 ? '+' : ''}${value}%`;
-      },
-      generator: (base, i) => {
-        const amount = (9 - i) * 10; // de +90 a -90
-        return amount >= 0 ? base.clone().lighten(amount).toHexString() : base.clone().darken(Math.abs(amount)).toHexString();
-      }
+      generator: (base, i) => { const amount = (9 - i) * 10; return amount >= 0 ? base.clone().lighten(amount) : base.clone().darken(Math.abs(amount)); }
     },
     'Saturación': {
-      label: (i) => {
-        const value = (9 - i) * 10;
-        if (value === 0) return 'Original';
-        return `${value > 0 ? '+' : ''}${value}%`;
-      },
-      generator: (base, i) => {
-        const amount = (9 - i) * 10;
-        return amount >= 0 ? base.clone().saturate(amount).toHexString() : base.clone().desaturate(Math.abs(amount)).toHexString();
-      }
+      generator: (base, i) => { const amount = (9 - i) * 10; return amount >= 0 ? base.clone().saturate(amount) : base.clone().desaturate(Math.abs(amount)); }
     },
     'Matiz': {
-      label: (i) => {
-        const value = (i - 9) * 20;
-        if (value === 0) return 'Original';
-        return `${value}°`;
-      },
-      generator: (base, i) => {
-        const amount = (i - 9) * 20; // de -180 a +180
-        return base.clone().spin(amount).toHexString();
-      }
+      generator: (base, i) => { const amount = (i - 9) * 20; return base.clone().spin(amount); }
     },
     'Temperatura': {
-      label: (i) => {
-        const value = (9 - i) * 10;
-        if (value === 0) return 'Original';
-        return `${value > 0 ? '+' : ''}${value}%`;
-      },
-      generator: (base, i) => {
-        const amount = (9 - i) * 10;
-        if (amount > 0) return tinycolor.mix(base, '#ffc966', amount / 2).toHexString(); // Cálido
-        return tinycolor.mix(base, '#66b3ff', Math.abs(amount / 2)).toHexString(); // Frío
-      }
+      generator: (base, i) => { const amount = (9 - i) * 10; if (amount > 0) return tinycolor.mix(base, '#ffc966', amount / 2); return tinycolor.mix(base, '#66b3ff', Math.abs(amount / 2)); }
     },
+    'Luminosidad': {
+      generator: (base, i) => { const hsl = base.toHsl(); const newLuminance = 0.05 + ((18-i) / 18) * 0.9; return tinycolor({ h: hsl.h, s: hsl.s, l: newLuminance }); }
+    },
+    'Ceguera': {
+        generator: (base, i) => { const amount = (9-i) * 5; return tinycolor.mix(base.clone().desaturate(amount), '#A09C7D', Math.abs(amount)); }
+    },
+    'Gradiente': {
+        generator: (base, i) => { const light = base.clone().lighten(40).saturate(10); const dark = base.clone().darken(20).desaturate(10); const amount = ((18-i) / 18) * 100; return tinycolor.mix(dark, light, amount); }
+    }
   };
 
-  const tabNames = Object.keys(variationTabs);
+  const tabNames = Object.keys(variationGenerators);
   const [activeTab, setActiveTab] = useState(tabNames[0]);
   
-  const base = tinycolor(brandColor);
-  const currentPalette = Array.from({ length: 19 }).map((_, i) => ({
-    color: variationTabs[activeTab].generator(base, i),
-    label: variationTabs[activeTab].label(i)
-  }));
-
   const handleSelect = (color) => {
     onColorSelect(color);
     onClose();
   };
 
+  const getLabels = (tab) => {
+    if (tab === 'Matiz') {
+      return Array.from({ length: 19 }).map((_, i) => {
+        const value = (i - 9) * 20;
+        if (value === 0) return 'Original';
+        return `${value}°`;
+      });
+    }
+    return Array.from({ length: 19 }).map((_, i) => {
+      const value = (9 - i) * 10;
+      if (value === 0) return 'Original';
+      return `${value > 0 ? '+' : ''}${value}%`;
+    });
+  };
+
+  const currentLabels = getLabels(activeTab);
+  const currentGenerator = variationGenerators[activeTab].generator;
+
+  const paletteToShow = explorerPalette;
+  
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div 
-        className="p-6 rounded-xl border max-w-4xl w-full relative flex flex-col" 
+        className="p-6 rounded-xl border max-w-7xl w-full relative flex flex-col" 
         style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)', height: '90vh' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -254,43 +244,52 @@ const VariationsModal = ({ brandColor, onClose, onColorSelect }) => {
           </button>
         </div>
 
-        <div className="flex border-b flex-shrink-0" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="flex border-b flex-shrink-0 overflow-x-auto">
           {tabNames.map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`py-2 px-4 text-sm font-semibold -mb-px border-b-2 ${activeTab === tab ? 'border-[var(--action-primary-default)] text-[var(--action-primary-default)]' : 'border-transparent text-[var(--text-muted)]'}`}
+              className={`py-2 px-4 text-sm font-semibold -mb-px border-b-2 flex-shrink-0 ${activeTab === tab ? 'border-[var(--action-primary-default)] text-[var(--action-primary-default)]' : 'border-transparent text-[var(--text-muted)]'}`}
             >
               {tab}
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto mt-6 pr-2">
-          <div className="flex gap-x-6">
-            <div className="flex flex-col items-end gap-1">
-              {currentPalette.map((item, index) => (
-                 <div key={index} className="h-12 flex items-center">
-                    <span className="text-xs font-mono" style={{color: 'var(--text-muted)'}}>{item.label}</span>
-                 </div>
-              ))}
+        <div className="flex-1 overflow-auto mt-6">
+          <div className="flex gap-x-1">
+            {/* Labels Column */}
+            <div className="sticky left-0 bg-[var(--bg-card)] flex-shrink-0 w-16 z-10">
+                 {currentLabels.map((label, index) => (
+                    <div key={index} className="h-10 flex items-center justify-end text-xs font-mono pr-2" style={{color: 'var(--text-muted)'}}>{label}</div>
+                 ))}
             </div>
-            <div className="grid grid-cols-1 gap-1 flex-1">
-              {currentPalette.map((item, index) => (
-                <div 
-                  key={index} 
-                  className="w-full h-12 rounded-md cursor-pointer group flex items-center justify-end px-4 transition-all duration-150 hover:shadow-lg hover:scale-[1.02]" 
-                  style={{backgroundColor: item.color}}
-                  onClick={() => handleSelect(item.color)}
-                >
-                  <span className="font-mono text-sm opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: tinycolor(item.color).isLight() ? '#000' : '#FFF' }}>
-                    {item.color.toUpperCase()}
-                  </span>
-                </div>
-              ))}
-            </div>
+            
+            {/* Color Columns */}
+            {paletteToShow.map((colorHex, colIndex) => (
+              <div key={colIndex} className="flex flex-col gap-1 w-16 flex-shrink-0">
+                {Array.from({ length: 19 }).map((_, rowIndex) => {
+                  const baseColor = tinycolor(colorHex);
+                  const variedColor = currentGenerator(baseColor, rowIndex).toHexString();
+                  return (
+                    <div 
+                      key={rowIndex} 
+                      className="w-full h-10 rounded-md cursor-pointer group flex items-center justify-center transition-transform hover:scale-110" 
+                      style={{backgroundColor: variedColor}}
+                      onClick={() => handleSelect(variedColor)}
+                      title={variedColor.toUpperCase()}
+                    >
+                        <span className="font-mono text-[10px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: tinycolor(variedColor).isLight() ? '#000' : '#FFF' }}>
+                            {variedColor.substring(1).toUpperCase()}
+                        </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
+
       </div>
     </div>
   );
@@ -1465,9 +1464,9 @@ function App() {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                     <h2 className="font-bold text-lg" style={{ color: tinycolor(semanticPreviewBg).isLight() ? '#000' : '#FFF' }}>Paletas Semánticas</h2>
                     <div className="flex items-center gap-2 sm:gap-4">
-                      <span className="text-xs font-mono p-1 rounded-md" style={{ backgroundColor: 'rgba(0,0,0,0.1)', color: tinycolor(semanticPreviewBg).isLight() ? 'var(--text-muted)' : '#FFF' }}>{backgroundModeLabels[semanticPreviewMode]}</span>
+                      <span className="text-xs font-mono p-1 rounded-md" style={{ backgroundColor: 'rgba(0,0,0,0.1)', color: tinycolor(semanticPreviewBg).isLight() ? 'var(--text-muted)' : '#FFF' }}>{backgroundModeLabels[semanticPreviewBg]}</span>
                        <button 
-                        onClick={() => cyclePreviewMode(semanticPreviewMode, setSemanticPreviewMode, ['white', 'T950', 'black', 'T0', 'card', 'default'])}
+                        onClick={() => cyclePreviewMode(semanticPreviewBg, setSemanticPreviewMode, ['white', 'T950', 'black', 'T0', 'card'])}
                         className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2"
                         style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}
                       >
@@ -1498,7 +1497,7 @@ function App() {
         />
         {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
         {isVariationsVisible && <VariationsModal 
-            brandColor={brandColor}
+            explorerPalette={explorerPalette}
             onClose={() => setIsVariationsVisible(false)}
             onColorSelect={updateBrandColor}
         />}
@@ -1508,6 +1507,4 @@ function App() {
 }
 
 export default App;
-
-
 
