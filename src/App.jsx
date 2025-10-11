@@ -180,7 +180,14 @@ ${formatShades(grayShades)}
 const VariationsModal = ({ explorerPalette, onClose, onColorSelect }) => {
   const variationGenerators = {
     'Sombra': {
-      generator: (base, i) => { const amount = (9 - i) * 10; return amount >= 0 ? base.clone().lighten(amount) : base.clone().darken(Math.abs(amount)); }
+      generator: (base, i) => {
+        const amount = (9 - i) * 8; // Reduced step for smoother, less extreme gradient
+        if (amount >= 0) {
+          return tinycolor.mix(base, '#fff', amount);
+        } else {
+          return tinycolor.mix(base, '#000', Math.abs(amount));
+        }
+      }
     },
     'Saturación': {
       generator: (base, i) => { const amount = (9 - i) * 10; return amount >= 0 ? base.clone().saturate(amount) : base.clone().desaturate(Math.abs(amount)); }
@@ -194,8 +201,11 @@ const VariationsModal = ({ explorerPalette, onClose, onColorSelect }) => {
     'Luminosidad': {
       generator: (base, i) => { const hsl = base.toHsl(); const newLuminance = 0.05 + ((18-i) / 18) * 0.9; return tinycolor({ h: hsl.h, s: hsl.s, l: newLuminance }); }
     },
-    'Ceguera': {
-        generator: (base, i) => { const amount = (9-i) * 5; return tinycolor.mix(base.clone().desaturate(amount), '#A09C7D', Math.abs(amount)); }
+     'Ceguera': {
+      generator: (base, i) => {
+        const amount = (9 - i) * 5;
+        return tinycolor.mix(base.clone().desaturate(amount), '#A09C7D', Math.abs(amount));
+      }
     },
     'Gradiente': {
         generator: (base, i) => { const light = base.clone().lighten(40).saturate(10); const dark = base.clone().darken(20).desaturate(10); const amount = ((18-i) / 18) * 100; return tinycolor.mix(dark, light, amount); }
@@ -231,9 +241,9 @@ const VariationsModal = ({ explorerPalette, onClose, onColorSelect }) => {
   const paletteToShow = explorerPalette;
   
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
       <div 
-        className="p-6 rounded-xl border max-w-7xl w-full relative flex flex-col" 
+        className="p-4 sm:p-6 rounded-xl border max-w-7xl w-full relative flex flex-col" 
         style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)', height: '90vh' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -267,19 +277,19 @@ const VariationsModal = ({ explorerPalette, onClose, onColorSelect }) => {
             
             {/* Color Columns */}
             {paletteToShow.map((colorHex, colIndex) => (
-              <div key={colIndex} className="flex flex-col gap-1 w-16 flex-shrink-0">
+              <div key={colIndex} className="group flex flex-col gap-1 w-12 flex-shrink-0">
                 {Array.from({ length: 19 }).map((_, rowIndex) => {
                   const baseColor = tinycolor(colorHex);
                   const variedColor = currentGenerator(baseColor, rowIndex).toHexString();
                   return (
                     <div 
                       key={rowIndex} 
-                      className="w-full h-10 rounded-md cursor-pointer group flex items-center justify-center transition-transform hover:scale-110" 
+                      className="w-full h-10 rounded-md cursor-pointer flex items-center justify-center transition-transform hover:scale-110" 
                       style={{backgroundColor: variedColor}}
                       onClick={() => handleSelect(variedColor)}
                       title={variedColor.toUpperCase()}
                     >
-                        <span className="font-mono text-[10px] opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: tinycolor(variedColor).isLight() ? '#000' : '#FFF' }}>
+                        <span className="font-mono text-[10px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{ color: tinycolor(variedColor).isLight() ? '#000' : '#FFF' }}>
                             {variedColor.substring(1).toUpperCase()}
                         </span>
                     </div>
