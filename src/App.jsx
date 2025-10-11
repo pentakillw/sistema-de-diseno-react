@@ -176,6 +176,31 @@ ${formatShades(grayShades)}
 
 // --- Componentes ---
 
+// --- Componente para el Anuncio ---
+const AdBanner = () => {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.async = true;
+    script.dataset.cfasync = "false";
+    script.src = "//pl27818253.effectivegatecpm.com/b1bcdef33e26ff258cea985fafbdf8da/invoke.js";
+    
+    const container = document.getElementById('container-b1bcdef33e26ff258cea985fafbdf8da');
+    if (container) {
+       if (container.children.length === 0) {
+            container.appendChild(script);
+       }
+    }
+    
+  }, []);
+
+  return (
+    <div className="mb-8 flex justify-center items-center">
+      <div id="container-b1bcdef33e26ff258cea985fafbdf8da"></div>
+    </div>
+  );
+};
+
+
 // --- Modal de Variaciones ---
 const VariationsModal = ({ explorerPalette, onClose, onColorSelect }) => {
   const variationGenerators = {
@@ -1496,6 +1521,7 @@ function App() {
             </section>
         </main>
         <footer className="text-center mt-12 pt-8 border-t" style={{ borderColor: controlsThemeStyle.borderColor, color: controlsThemeStyle.color}}>
+            <AdBanner />
             <p className="text-sm">Creado por JD_DM.</p>
             <p className="text-xs mt-1">Un proyecto de código abierto para la comunidad de Power Apps.</p>
         </footer>
