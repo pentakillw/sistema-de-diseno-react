@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import tinycolor from 'tinycolor2';
-import { Sparkles, Wand2, HelpCircle, X, Check, Clipboard, Download, Upload, AlertCircle, RefreshCcw, FileCode, Eye, Palette, Settings, Info, CheckCircle, AlertTriangle, Sun, Moon, Layers, ChevronDown } from 'lucide-react';
+import { Sparkles, Wand2, HelpCircle, X, Check, Clipboard, Download, Upload, AlertCircle, RefreshCcw, FileCode, Eye, Palette, Settings, Info, CheckCircle, AlertTriangle, Sun, Moon, Layers, ChevronDown, Undo2, Redo2 } from 'lucide-react';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
 
 // --- Funciones de Utilidad de Colores (lógica interna en inglés) ---
@@ -336,15 +336,15 @@ const AccessibilityCard = ({ accessibility, colors, isVisible, onToggle }) => {
       {isVisible && (
         <div className="mt-4 pt-4 border-t" style={{borderColor: 'var(--border-default)'}}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Card para el Botón */}
+            {/* Card para el Color de Acento */}
             <div>
-              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Contraste del Botón Principal</h3>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Contraste del Color de Acento (sobre fondo)</h3>
               <div className="flex items-center gap-4">
                 <div 
-                  className="w-24 h-12 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner"
-                  style={{ backgroundColor: colors.btnBg, color: colors.btnText }}
+                  className="w-24 h-12 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner p-2 text-center"
+                  style={{ backgroundColor: colors.btnBg, color: colors.btnText, border: '1px solid var(--border-strong)' }}
                 >
-                  Botón
+                  {colors.btnText.toUpperCase()}
                 </div>
                 <div className="text-sm">
                   <p>Ratio: <span className="font-bold">{accessibility.btn.ratio}:1</span></p>
@@ -357,19 +357,19 @@ const AccessibilityCard = ({ accessibility, colors, isVisible, onToggle }) => {
                 </div>
               </div>
               <p className="text-xs mt-3 italic" style={{ color: 'var(--text-muted)' }}>
-                Se mide el color de <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.btnBg.toUpperCase()}</span> (fondo) contra <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.btnText.toUpperCase()}</span> (texto).
+                Se mide el color de <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.btnText.toUpperCase()}</span> (acento) contra <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.btnBg.toUpperCase()}</span> (fondo).
               </p>
             </div>
 
-            {/* Card para el Texto */}
+            {/* Card para el Color de Marca */}
             <div>
-              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Contraste del Texto Principal</h3>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Contraste del Color de Marca (sobre fondo)</h3>
               <div className="flex items-center gap-4">
                 <div 
-                  className="w-24 h-12 rounded-lg flex items-center justify-center text-sm shadow-inner p-2 text-center"
+                  className="w-24 h-12 rounded-lg flex items-center justify-center text-sm shadow-inner p-2 text-center font-bold"
                   style={{ backgroundColor: colors.textBg, color: colors.textColor, border: '1px solid var(--border-strong)' }}
                 >
-                  Texto de ejemplo
+                  {colors.textColor.toUpperCase()}
                 </div>
                 <div className="text-sm">
                   <p>Ratio: <span className="font-bold">{accessibility.text.ratio}:1</span></p>
@@ -382,7 +382,7 @@ const AccessibilityCard = ({ accessibility, colors, isVisible, onToggle }) => {
                 </div>
               </div>
               <p className="text-xs mt-3 italic" style={{ color: 'var(--text-muted)' }}>
-                Se mide el color de <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.textColor.toUpperCase()}</span> (texto) contra <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.textBg.toUpperCase()}</span> (fondo).
+                Se mide el color de <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.textColor.toUpperCase()}</span> (marca) contra <span className="font-mono p-1 rounded" style={{backgroundColor: 'var(--bg-muted)'}}>{colors.textBg.toUpperCase()}</span> (fondo).
               </p>
             </div>
           </div>
@@ -628,7 +628,6 @@ function App() {
 
   const [lightPreviewMode, setLightPreviewMode] = useState('T950');
   const [darkPreviewMode, setDarkPreviewMode] = useState('T0');
-  const [harmonyPreviewMode, setHarmonyPreviewMode] = useState('default');
   const [semanticPreviewMode, setSemanticPreviewMode] = useState('card');
   const [colorModePreview, setColorModePreview] = useState('white');
   const [isMethodSelectorVisible, setIsMethodSelectorVisible] = useState(false);
@@ -638,68 +637,173 @@ function App() {
   const [primaryButtonTextColor, setPrimaryButtonTextColor] = useState('#FFFFFF');
   
   const [explorerPalette, setExplorerPalette] = useState([]);
+  const [explorerGrayShades, setExplorerGrayShades] = useState([]);
+  const [colorHistory, setColorHistory] = useState([defaultState.brandColor]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const isUpdateFromExplorer = useRef(false);
+
 
   const importFileRef = useRef(null);
 
+  // --- Lógica de Generación de Temas ---
   // Genera la paleta para el Modo Color
-  const generateExplorerPalette = (method = 'auto') => {
-      let newPalette = [];
-      const randomColor = tinycolor.random();
+  const generateExplorerPalette = (method = 'auto', baseColorHex) => {
+    let newPalette = [];
+    // Si el método es 'auto' o no hay color base, genera uno aleatorio.
+    // De lo contrario, usa el color de marca actual como base para las armonías.
+    const colorForExplorer = (method === 'auto' || !baseColorHex) 
+      ? tinycolor.random()
+      : tinycolor(baseColorHex);
 
-      switch (method) {
-          case 'mono': {
-              newPalette = generateShades(randomColor.toHexString());
-              break;
-          }
-          case 'analogous': {
-              const analogousColors = randomColor.analogous(5, 10);
-              analogousColors.forEach(c => {
-                  newPalette.push(...generateShades(c.toHexString()).slice(4, 8));
-              });
-              break;
-          }
-          case 'complement': {
-              const complementColors = [randomColor, randomColor.complement()];
-              complementColors.forEach(c => {
-                  newPalette.push(...generateShades(c.toHexString()).slice(0, 10));
-              });
-              break;
-          }
-          case 'triad': {
-              const triadColors = randomColor.triad();
-              for(let i = 0; i < 7; i++) {
-                  newPalette.push(...generateShades(triadColors[0].toHexString()).slice(i*2, i*2+2));
-                  newPalette.push(...generateShades(triadColors[1].toHexString()).slice(i*2, i*2+2));
-                  newPalette.push(...generateShades(triadColors[2].toHexString()).slice(i*2, i*2+2));
-              }
-               newPalette = newPalette.slice(0, 20);
-              break;
-          }
-          case 'tetrad': {
-              const tetradColors = randomColor.tetrad();
-              tetradColors.forEach(c => {
-                  newPalette.push(...generateShades(c.toHexString()).slice(2, 7));
-              });
-              break;
-          }
-          case 'auto':
-          default: {
-              let hsv = { h: Math.random() * 360, s: 0.5 + Math.random() * 0.5, v: 0.8 + Math.random() * 0.2 };
-              for (let i = 0; i < 20; i++) {
-                  hsv.h = (hsv.h + 137.508) % 360; // Golden Angle
-                  hsv.s = Math.max(0.3, Math.min(1, hsv.s + (Math.random() - 0.5) * 0.2));
-                  hsv.v = Math.max(0.6, Math.min(1, hsv.v + (Math.random() - 0.5) * 0.2));
-                  newPalette.push(tinycolor(hsv).toHexString());
-              }
-              break;
-          }
-      }
-      setExplorerPalette(newPalette.slice(0,20));
+    switch (method) {
+        case 'mono': {
+            newPalette = generateShades(colorForExplorer.toHexString());
+            break;
+        }
+        case 'analogous': {
+            const analogousColors = colorForExplorer.analogous(5, 10);
+            analogousColors.forEach(c => {
+                newPalette.push(...generateShades(c.toHexString()).slice(4, 8));
+            });
+            break;
+        }
+        case 'complement': {
+            const complementColors = [colorForExplorer, colorForExplorer.complement()];
+            complementColors.forEach(c => {
+                newPalette.push(...generateShades(c.toHexString()).slice(0, 10));
+            });
+            break;
+        }
+        case 'triad': {
+            const triadColors = colorForExplorer.triad();
+            for(let i = 0; i < 7; i++) {
+                newPalette.push(...generateShades(triadColors[0].toHexString()).slice(i*2, i*2+2));
+                newPalette.push(...generateShades(triadColors[1].toHexString()).slice(i*2, i*2+2));
+                newPalette.push(...generateShades(triadColors[2].toHexString()).slice(i*2, i*2+2));
+            }
+             newPalette = newPalette.slice(0, 20);
+            break;
+        }
+        case 'tetrad': {
+            const tetradColors = colorForExplorer.tetrad();
+            tetradColors.forEach(c => {
+                newPalette.push(...generateShades(c.toHexString()).slice(2, 7));
+            });
+            break;
+        }
+        case 'auto':
+        default: {
+            let hsv = colorForExplorer.toHsv();
+            for (let i = 0; i < 20; i++) {
+                hsv.h = (hsv.h + 137.508) % 360; // Golden Angle
+                hsv.s = Math.max(0.3, Math.min(1, hsv.s + (Math.random() - 0.5) * 0.2));
+                hsv.v = Math.max(0.6, Math.min(1, hsv.v + (Math.random() - 0.5) * 0.2));
+                newPalette.push(tinycolor(hsv).toHexString());
+            }
+            break;
+        }
+    }
+    setExplorerPalette(newPalette.slice(0,20));
+
+    const baseForGray = newPalette.length > 9 ? newPalette[9] : tinycolor.random().toHexString();
+    const harmonicGray = tinycolor(baseForGray).desaturate(85).toHexString();
+    setExplorerGrayShades(generateShades(harmonicGray));
+};
+  // Función centralizada para actualizar el color de marca y manejar el historial
+  const updateBrandColor = (newColor) => {
+    if (newColor === brandColor) return;
+
+    // Actualiza el historial
+    const newHistory = colorHistory.slice(0, historyIndex + 1);
+    newHistory.push(newColor);
+    setColorHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+
+    // Actualiza el color
+    setBrandColor(newColor);
   };
-  
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setBrandColor(colorHistory[newIndex]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < colorHistory.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setBrandColor(colorHistory[newIndex]);
+    }
+  };
+
+
+  // Genera un tema aleatorio basado en un método de armonía de color.
+  const generateRandomThemeByMethod = (method) => {
+    let newBrandColor;
+    const baseColor = tinycolor.random();
+
+    // Elige un color basado en el método de armonía
+    switch (method) {
+        case 'analogous':
+            newBrandColor = baseColor.analogous()[1];
+            break;
+        case 'complement':
+            newBrandColor = baseColor.complement();
+            break;
+        case 'triad':
+            newBrandColor = baseColor.triad()[1];
+            break;
+        case 'tetrad':
+            newBrandColor = baseColor.tetrad()[1];
+            break;
+        case 'mono':
+        case 'auto':
+        default:
+            newBrandColor = baseColor;
+            break;
+    }
+
+    // Se asegura de que el color elegido sea accesible contra blanco o negro
+    let attempts = 0;
+    let isAccessible = false;
+    while (!isAccessible && attempts < 20) {
+        // Usa la función isReadable de tinycolor para verificar el contraste a nivel AA
+        if (tinycolor.isReadable('#FFF', newBrandColor, { level: "AA" }) || tinycolor.isReadable('#000', newBrandColor, { level: "AA" })) {
+            isAccessible = true;
+        } else {
+            // Si no es accesible, genera un color completamente nuevo y lo intenta de nuevo
+            newBrandColor = tinycolor.random();
+        }
+        attempts++;
+    }
+
+    updateBrandColor(newBrandColor.toHexString()); // Usar la nueva función
+    setIsGrayAuto(true); // Activa el gris automático para una mejor armonía
+    showNotification(`¡Nuevo tema aleatorio (${method}) generado!`);
+    // Pasa el nuevo color directamente para que la paleta se genere en base a él
+    generateExplorerPalette(method, newBrandColor.toHexString());
+  };
+
+  const handleExplorerColorPick = (newColor) => {
+    isUpdateFromExplorer.current = true;
+    updateBrandColor(newColor);
+  };
+
   useEffect(() => {
-    generateExplorerPalette(explorerMethod);
-  }, [explorerMethod]);
+    if (isUpdateFromExplorer.current) {
+      // Si la actualización vino del explorador, no regeneramos la paleta.
+      // Simplemente reiniciamos la bandera para la próxima vez.
+      isUpdateFromExplorer.current = false;
+    } else {
+      // Si la actualización vino de otro lugar (deshacer, rehacer, selector principal),
+      // entonces sí regeneramos la paleta de exploración.
+      generateExplorerPalette(explorerMethod, brandColor);
+    }
+  }, [explorerMethod, brandColor]);
 
   // Efecto para generar paletas de colores (lógica interna)
   useEffect(() => {
@@ -709,6 +813,7 @@ function App() {
     }
   }, [brandColor, isGrayAuto]);
 
+  // [EFECTO PRINCIPAL] Genera todas las paletas y el código cuando cambian los colores base.
   useEffect(() => {
     const newBrandShades = generateShades(brandColor);
     const newGrayShades = generateShades(grayColor);
@@ -858,55 +963,7 @@ function App() {
     root.style.setProperty('--bg-success-weak', currentPalette.fullBackgroundColors.find(c=>c.name==='ExitoDebil').color);
     root.style.setProperty('--bg-attention-weak', currentPalette.fullBackgroundColors.find(c=>c.name==='AtencionDebil').color);
     root.style.setProperty('--bg-critical-weak', currentPalette.fullBackgroundColors.find(c=>c.name==='CriticoDebil').color);
-    
-    // --- Lógica de Accesibilidad ---
-    // EXPLICACIÓN: Aquí calculamos el contraste para dos casos críticos:
-    // 1. Botón Principal: Su color de fondo vs el texto que debería llevar (blanco o negro).
-    // 2. Texto Principal: El color de texto por defecto vs el color de fondo por defecto del tema.
-
-    // 1. CÁLCULO PARA EL BOTÓN PRINCIPAL
-    // Obtenemos el color de fondo del botón primario que acabamos de generar.
-    const primaryActionColor = currentPalette.fullActionColors.find(c => c.name === 'Primario').color;
-    // Obtenemos el blanco y el negro puros de nuestra escala de grises para usarlos como posibles colores de texto.
-    const lightColor = newGrayShades[19]; // Tono más claro (blanco)
-    const darkColor = newGrayShades[0];   // Tono más oscuro (negro)
-    // Medimos el contraste del fondo del botón contra ambos colores.
-    const contrastWithLight = tinycolor.readability(primaryActionColor, lightColor);
-    const contrastWithDark = tinycolor.readability(primaryActionColor, darkColor);
-    // Elegimos el color de texto (blanco o negro) que dé MAYOR contraste. Este será el color de texto recomendado.
-    const newBestTextColor = contrastWithLight > contrastWithDark ? lightColor : darkColor;
-    setPrimaryButtonTextColor(newBestTextColor);
-    // El ratio de contraste final del botón es el valor más alto que pudimos obtener.
-    const btnContrast = Math.max(contrastWithLight, contrastWithDark);
-    
-    // 2. CÁLCULO PARA EL TEXTO PRINCIPAL
-    // Obtenemos el color de texto por defecto del tema actual (claro u oscuro).
-    const themeTextColor = currentPalette.fullForegroundColors.find(c => c.name === 'Predeterminado').color;
-    // Obtenemos el color de fondo por defecto del tema actual.
-    const themeBgColor = currentPalette.fullBackgroundColors.find(c => c.name === 'Predeterminado').color;
-    // Medimos el contraste entre ellos.
-    const textContrast = tinycolor.readability(themeTextColor, themeBgColor);
-    
-    // Asignamos un nivel (Fallido, AA, o AAA) según las guías WCAG.
-    let btnLevel = 'Fallido', textLevel = 'Fallido';
-    if (btnContrast >= 7) btnLevel = 'AAA'; else if (btnContrast >= 4.5) btnLevel = 'AA';
-    if (textContrast >= 7) textLevel = 'AAA'; else if (textContrast >= 4.5) textLevel = 'AA';
-
-    // Actualizamos el estado de accesibilidad que se muestra en la UI.
-    setAccessibility({ 
-        btn: { ratio: btnContrast.toFixed(2), level: btnLevel },
-        text: { ratio: textContrast.toFixed(2), level: textLevel } 
-    });
-
-    // Actualizamos el estado con los colores exactos que se usaron para el cálculo,
-    // para que el nuevo componente visual pueda mostrarlos de forma explícita.
-    setAccessibilityColors({
-        btnBg: primaryActionColor,
-        btnText: newBestTextColor,
-        textBg: themeBgColor,
-        textColor: themeTextColor,
-    });
-    
+        
     const themeData = {
         brandShades: newBrandShades, grayShades: newGrayShades,
         stylePalette: currentPalette, theme, brandColor, grayColor, font,
@@ -919,6 +976,56 @@ function App() {
 
   }, [brandColor, grayColor, theme, font, fxSeparator, useFxQuotes, harmonyMode]);
   
+  // [NUEVO EFECTO] Calcula la accesibilidad cada vez que la paleta de estilos cambia.
+  useEffect(() => {
+    // Evita ejecutar si la paleta de estilos o las escalas de grises aún no están listas.
+    if (!stylePalette || !harmonyPalettes || grayShades.length < 20) {
+      return;
+    }
+
+    // --- Lógica de Accesibilidad ---
+    // TEST 1: Contraste del Color de Acento sobre el fondo principal.
+    const accentColor = harmonyPalettes.accentColor;
+    const themeBgColor = stylePalette.fullBackgroundColors.find(c => c.name === 'Predeterminado').color;
+    const accentContrast = tinycolor.readability(accentColor, themeBgColor);
+
+    let accentLevel = 'Fallido';
+    if (accentContrast >= 7) accentLevel = 'AAA';
+    else if (accentContrast >= 4.5) accentLevel = 'AA';
+
+    // TEST 2: Contraste del Color de Marca sobre el fondo principal.
+    const brandContrast = tinycolor.readability(brandColor, themeBgColor);
+    
+    // Asignación de nivel (Fallido, AA, o AAA) según las guías WCAG.
+    let brandLevel = 'Fallido';
+    if (brandContrast >= 7) brandLevel = 'AAA';
+    else if (brandContrast >= 4.5) brandLevel = 'AA';
+
+    // Actualización del estado de accesibilidad para la UI.
+    setAccessibility({ 
+        btn: { ratio: accentContrast.toFixed(2), level: accentLevel }, // 'btn' ahora representa el test de acento
+        text: { ratio: brandContrast.toFixed(2), level: brandLevel } 
+    });
+
+    // Actualización de los colores exactos usados para el cálculo.
+    setAccessibilityColors({
+        btnBg: themeBgColor,       // Fondo para la previsualización del acento
+        btnText: accentColor,      // El color de acento
+        textBg: themeBgColor,      // Fondo para la previsualización de la marca
+        textColor: brandColor,     // El color de marca
+    });
+
+    // Esta lógica se mantiene solo para definir el color de texto del botón en la UI de previsualización
+    const primaryActionColor = stylePalette.fullActionColors.find(c => c.name === 'Primario').color;
+    const lightColor = grayShades[19];
+    const darkColor = grayShades[0];
+    const contrastWithLight = tinycolor.readability(primaryActionColor, lightColor);
+    const contrastWithDark = tinycolor.readability(primaryActionColor, darkColor);
+    const newBestTextColor = contrastWithLight > contrastWithDark ? lightColor : darkColor;
+    setPrimaryButtonTextColor(newBestTextColor);
+
+  }, [stylePalette, grayShades, brandColor, harmonyPalettes]); // <-- Se ejecuta cuando cambia la paleta, los grises O EL COLOR DE MARCA.
+
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification({ message: '', type: 'success' }), 3000);
@@ -931,16 +1038,8 @@ function App() {
   };
   
   const handleRandomTheme = () => {
-    let newBrandColor;
-    let isAccessible = false;
-    while (!isAccessible) {
-        newBrandColor = tinycolor.random();
-        if (newBrandColor.isDark() && tinycolor.readability('#FFF', newBrandColor) > 4.5) {
-             isAccessible = true;
-        }
-    }
-    setIsGrayAuto(true);
-    setBrandColor(newBrandColor.toHexString());
+    // Utiliza el método seleccionado en el combobox de configuración.
+    generateRandomThemeByMethod(explorerMethod);
   };
 
   const handleRandomHarmony = () => {
@@ -953,7 +1052,7 @@ function App() {
         attempts++;
     }
 
-    setBrandColor(newColor.toHexString());
+    updateBrandColor(newColor.toHexString());
     showNotification('¡Nueva armonía aleatoria generada!');
   };
 
@@ -1057,7 +1156,6 @@ function App() {
   const harmonyBg = harmonyPalettes.grayShades[1];
   const lightPreviewBg = getPreviewBgColor(lightPreviewMode, grayShades, null, harmonyBg);
   const darkPreviewBg = getPreviewBgColor(darkPreviewMode, grayShades, null, harmonyBg);
-  const harmonyPreviewBg = getPreviewBgColor(harmonyPreviewMode, harmonyPalettes.grayShades, null, harmonyBg);
   const semanticPreviewBg = getPreviewBgColor(semanticPreviewMode, grayShades, stylePalette.fullBackgroundColors.find(c=>c.name==='Apagado').color, harmonyBg);
   const colorModeBg = getPreviewBgColor(colorModePreview, grayShades, null, harmonyBg);
 
@@ -1106,9 +1204,9 @@ function App() {
                             <label className="text-sm">Color de Marca:</label>
                             <div className="flex items-center rounded-md" style={{ backgroundColor: theme === 'light' ? '#FFFFFF' : '#374151' }}>
                                 <div className="w-7 h-7 rounded-l-md cursor-pointer border-r" style={{ backgroundColor: brandColor, borderColor: controlsThemeStyle.borderColor }} onClick={() => setIsBrandPickerVisible(!isBrandPickerVisible)}/>
-                                <HexColorInput color={brandColor} onChange={setBrandColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{ color: pageThemeStyle.color}} prefixed/>
+                                <HexColorInput color={brandColor} onChange={updateBrandColor} className="font-mono bg-transparent px-2 py-1 rounded-r-md w-24 focus:outline-none" style={{ color: pageThemeStyle.color}} prefixed/>
                             </div>
-                            {isBrandPickerVisible && (<div className="absolute z-10 top-full mt-2 left-0 w-56"><div className="fixed inset-0" onClick={() => setIsBrandPickerVisible(false)} /><HexColorPicker color={brandColor} onChange={setBrandColor} /></div>)}
+                            {isBrandPickerVisible && (<div className="absolute z-10 top-full mt-2 left-0 w-56"><div className="fixed inset-0" onClick={() => setIsBrandPickerVisible(false)} /><HexColorPicker color={brandColor} onChange={updateBrandColor} /></div>)}
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="flex items-center gap-2"><Wand2 size={16} /><label className="text-sm font-medium">Gris Automático</label></div>
@@ -1123,6 +1221,26 @@ function App() {
                             {isGrayPickerVisible && !isGrayAuto && (<div className="absolute z-10 top-full mt-2 right-0 w-56"><div className="fixed inset-0" onClick={() => setIsGrayPickerVisible(false)} /><HexColorPicker color={grayColor} onChange={setGrayColor} /></div>)}
                         </div>
                         
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm" htmlFor="methodSelector">Método Aleatorio:</label>
+                            <select 
+                                id="methodSelector" 
+                                value={explorerMethod} 
+                                onChange={(e) => setExplorerMethod(e.target.value)} 
+                                className="font-semibold px-2 py-1 rounded-md border" 
+                                style={{ backgroundColor: theme === 'light' ? '#FFFFFF' : '#374151', color: pageThemeStyle.color, borderColor: controlsThemeStyle.borderColor }}
+                            >
+                                {generationMethods.map(method => (
+                                    <option key={method.id} value={method.id}>{method.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                           <button onClick={handleUndo} disabled={historyIndex === 0} className="p-2 rounded-lg disabled:opacity-50" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}} title="Deshacer"><Undo2 size={16}/></button>
+                           <button onClick={handleRedo} disabled={historyIndex === colorHistory.length - 1} className="p-2 rounded-lg disabled:opacity-50" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}} title="Rehacer"><Redo2 size={16}/></button>
+                        </div>
+
                         <div className="hidden lg:block h-6 w-px bg-[var(--border-default)]"></div>
 
                         <div className="flex items-center gap-2">
@@ -1274,32 +1392,18 @@ function App() {
                              <button onClick={() => setIsVariationsVisible(true)} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)' }}>
                                 <Palette size={14} /> Variaciones
                             </button>
-                             <div className="relative">
-                                <button onClick={() => setIsMethodSelectorVisible(!isMethodSelectorVisible)} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)' }}>
-                                    Método <ChevronDown size={14} />
-                                </button>
-                                {isMethodSelectorVisible && (
-                                    <div className="absolute top-full right-0 mt-2 w-48 rounded-md shadow-lg py-1 z-20" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-default)'}}>
-                                        {generationMethods.map(method => (
-                                            <button 
-                                                key={method.id}
-                                                onClick={() => { setExplorerMethod(method.id); setIsMethodSelectorVisible(false); }}
-                                                className={`w-full text-left px-4 py-2 text-sm flex justify-between items-center ${explorerMethod === method.id ? 'font-bold' : ''}`}
-                                                style={{ color: 'var(--text-default)'}}
-                                            >
-                                                {method.name}
-                                                {explorerMethod === method.id && <Check size={16} />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                             </div>
-                            <button onClick={() => generateExplorerPalette(explorerMethod)} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--action-primary-default)', color: '#FFF' }}>
-                                <Sparkles size={14}/> Generar
-                            </button>
                         </div>
                     </div>
-                    <ColorPalette isExplorer={true} shades={explorerPalette} onShadeCopy={setBrandColor} themeOverride={tinycolor(colorModeBg).isLight() ? 'light' : 'dark'}/>
+                    <ColorPalette isExplorer={true} shades={explorerPalette} onShadeCopy={handleExplorerColorPick} themeOverride={tinycolor(colorModeBg).isLight() ? 'light' : 'dark'}/>
+                    <div className="mt-6 pt-4 border-t" style={{ borderColor: tinycolor(colorModeBg).isLight() ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)' }}>
+                        <p className="text-sm font-semibold mb-2" style={{ color: tinycolor(colorModeBg).isLight() ? '#4B5563' : '#9CA3AF' }}>Escala de Grises Sugerida (toca para usar)</p>
+                        <ColorPalette
+                            isExplorer={true}
+                            shades={explorerGrayShades}
+                            onShadeCopy={setGrayColor}
+                            themeOverride={tinycolor(colorModeBg).isLight() ? 'light' : 'dark'}
+                        />
+                    </div>
                </div>
 
                <div className="p-4 sm:p-6 rounded-xl border" style={{ backgroundColor: lightPreviewBg, borderColor: grayShades.length > 7 ? grayShades[7] : '#E5E7EB' }}>
@@ -1308,7 +1412,7 @@ function App() {
                    <div className="flex items-center gap-2 sm:gap-4">
                       <span className="text-xs font-mono p-1 rounded-md" style={{ backgroundColor: 'rgba(0,0,0,0.1)', color: tinycolor(lightPreviewBg).isLight() ? '#000' : '#FFF' }}>{backgroundModeLabels[lightPreviewMode]}</span>
                       <button 
-                        onClick={() => cyclePreviewMode(lightPreviewMode, setLightPreviewMode, ['T950', 'white', 'default'])}
+                        onClick={() => cyclePreviewMode(lightPreviewMode, setLightPreviewMode, ['T950', 'white'])}
                         className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2"
                         style={{ 
                           backgroundColor: tinycolor(lightPreviewBg).isLight() ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', 
@@ -1325,54 +1429,36 @@ function App() {
 
                <div className="p-4 sm:p-6 rounded-xl border" style={{ backgroundColor: darkPreviewBg, borderColor: grayShades.length > 2 ? grayShades[2] : '#4B5563' }}>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                  <h2 className="font-bold text-white" style={{color: tinycolor(darkPreviewBg).isLight() ? '#000' : '#FFF'}}>Modo Oscuro</h2>
-                   <div className="flex items-center gap-2 sm:gap-4">
-                      <span className="text-xs font-mono p-1 rounded-md" style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: tinycolor(darkPreviewBg).isLight() ? '#000' : '#FFF' }}>{backgroundModeLabels[darkPreviewMode]}</span>
-                      <button 
-                        onClick={() => cyclePreviewMode(darkPreviewMode, setDarkPreviewMode, ['T0', 'black', 'default'])}
-                        className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2"
-                        style={{ 
-                          backgroundColor: tinycolor(darkPreviewBg).isLight() ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', 
-                          color: tinycolor(darkPreviewBg).isLight() ? '#000' : '#FFF'
-                        }}
-                      >
-                         <Layers size={14}/> Alternar Fondo
-                      </button>
+                  <div className="flex-1">
+                     <h2 className="font-bold text-white" style={{color: tinycolor(darkPreviewBg).isLight() ? '#000' : '#FFF'}}>Modo Oscuro</h2>
                   </div>
-                </div>
-                <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
-                <ColorPalette title="Escala de Grises" color={grayColor} hex={grayColor} shades={grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
-              </div>
-
-              <div className="p-4 sm:p-6 rounded-xl border" style={{ backgroundColor: harmonyPreviewBg, borderColor: grayShades.length > 2 ? grayShades[2] : '#4B5563' }} >
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4">
-                    <h2 className="font-bold text-white" style={{color: tinycolor(harmonyPreviewBg).isLight() ? '#000' : '#FFF'}}>Modo Armonía</h2>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center flex-wrap gap-4">
-                         <div className="flex items-center gap-2 sm:gap-4">
-                            <span className="text-xs font-mono p-1 rounded-md" style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: tinycolor(harmonyPreviewBg).isLight() ? '#000' : '#FFF' }}>{backgroundModeLabels[harmonyPreviewMode]}</span>
-                            <button 
-                                onClick={() => cyclePreviewMode(harmonyPreviewMode, setHarmonyPreviewMode, ['white', 'T950', 'black', 'T0', 'default'])}
-                                className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2"
-                                style={{ 
-                                  backgroundColor: tinycolor(harmonyPreviewBg).isLight() ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', 
-                                  color: tinycolor(harmonyPreviewBg).isLight() ? '#000' : '#FFF'
-                                }}
-                              >
-                                <Layers size={14}/> Alternar Fondo
-                            </button>
+                   <div className="flex flex-col sm:flex-row items-start sm:items-center flex-wrap gap-4">
+                        <div className="flex items-center gap-2 sm:gap-4">
+                          <span className="text-xs font-mono p-1 rounded-md" style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: tinycolor(darkPreviewBg).isLight() ? '#000' : '#FFF' }}>{backgroundModeLabels[darkPreviewMode]}</span>
+                          <button 
+                            onClick={() => cyclePreviewMode(darkPreviewMode, setDarkPreviewMode, ['T0', 'black'])}
+                            className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2"
+                            style={{ 
+                              backgroundColor: tinycolor(darkPreviewBg).isLight() ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)', 
+                              color: tinycolor(darkPreviewBg).isLight() ? '#000' : '#FFF'
+                            }}
+                          >
+                             <Layers size={14}/> Alternar Fondo
+                          </button>
                         </div>
-                        <div className="flex items-center gap-2 rounded-lg p-1" style={{backgroundColor: grayShades.length > 2 ? grayShades[2] : '#444'}}>
+                        <div className="flex items-center gap-2 rounded-lg p-1" style={{backgroundColor: 'rgba(255,255,255,0.1)'}}>
                             <button onClick={() => setHarmonyMode('complementary')} className={`text-xs font-semibold py-1 px-3 rounded-md ${harmonyMode === 'complementary' ? 'text-white' : 'text-gray-300'}`} style={{backgroundColor: harmonyMode === 'complementary' ? brandShades[4] : 'transparent'}}>Complementaria</button>
                             <button onClick={() => setHarmonyMode('analogous')} className={`text-xs font-semibold py-1 px-3 rounded-md ${harmonyMode === 'analogous' ? 'text-white' : 'text-gray-300'}`} style={{backgroundColor: harmonyMode === 'analogous' ? brandShades[4] : 'transparent'}}>Análoga</button>
                             <button onClick={() => setHarmonyMode('triadic')} className={`text-xs font-semibold py-1 px-3 rounded-md ${harmonyMode === 'triadic' ? 'text-white' : 'text-gray-300'}`} style={{backgroundColor: harmonyMode === 'triadic' ? brandShades[4] : 'transparent'}}>Triádica</button>
                         </div>
-                        <button onClick={handleRandomHarmony} className="p-2 rounded-lg text-white" style={{background: 'linear-gradient(to right, #a855f7, #ec4899)'}} title="Generar Armonía Aleatoria">
-                            <Sparkles size={16}/>
-                        </button>
-                    </div>
+                   </div>
                 </div>
-                <ColorPalette title="Color de Acento" color={harmonyPalettes.accentColor} hex={harmonyPalettes.accentColor} shades={harmonyPalettes.accentShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
-                <ColorPalette title="Escala de Grises Armónica" color={harmonyPalettes.gray} hex={harmonyPalettes.gray} shades={harmonyPalettes.grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
+                <ColorPalette title="Color de Marca" color={brandColor} hex={brandColor} shades={brandShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
+                <ColorPalette title="Escala de Grises" color={grayColor} hex={grayColor} shades={grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
+                <div className="mt-6 pt-4 border-t" style={{ borderColor: tinycolor(darkPreviewBg).isLight() ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)' }}>
+                  <ColorPalette title="Color de Acento" color={harmonyPalettes.accentColor} hex={harmonyPalettes.accentColor} shades={harmonyPalettes.accentShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
+                  <ColorPalette title="Escala de Grises Armónica" color={harmonyPalettes.gray} hex={harmonyPalettes.gray} shades={harmonyPalettes.grayShades} onShadeCopy={(color) => handleCopy(color, `Tono ${color.toUpperCase()} copiado!`)} themeOverride="dark"/>
+                </div>
               </div>
 
                <div className="p-4 sm:p-6 rounded-xl border" style={{ backgroundColor: semanticPreviewBg, borderColor: 'var(--border-default)'}}>
@@ -1414,7 +1500,7 @@ function App() {
         {isVariationsVisible && <VariationsModal 
             brandColor={brandColor}
             onClose={() => setIsVariationsVisible(false)}
-            onColorSelect={setBrandColor}
+            onColorSelect={updateBrandColor}
         />}
       </div>
     </>
@@ -1422,4 +1508,6 @@ function App() {
 }
 
 export default App;
+
+
 
