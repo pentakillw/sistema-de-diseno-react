@@ -331,63 +331,96 @@ const VariationsModal = ({ explorerPalette, onClose, onColorSelect }) => {
 };
 
 // --- Modal Comprobador de Contraste ---
-const PaletteContrastChecker = ({ palette, onClose }) => {
+const PaletteContrastChecker = ({ palette, onClose, onCopy }) => {
   const [showOnlyValid, setShowOnlyValid] = useState(false);
+  // Add white and black to the palette, ensuring no duplicates.
+  const fullPalette = [...new Set([...palette, '#FFFFFF', '#000000'])];
 
-  const combinations = [];
-  for (const bg of palette) {
-    for (const fg of palette) {
-      if (bg === fg) continue;
-      const ratio = tinycolor.readability(bg, fg);
-      let level = '';
-      if (ratio >= 7) level = 'AAA';
-      else if (ratio >= 4.5) level = 'AA';
-      
-      combinations.push({ bg, fg, ratio, level });
-    }
-  }
-
-  const filteredCombinations = showOnlyValid ? combinations.filter(c => c.level) : combinations;
-  
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
       <div 
-        className="p-6 rounded-xl border max-w-5xl w-full relative flex flex-col" 
+        className="p-4 sm:p-6 rounded-xl border max-w-7xl w-full relative flex flex-col" 
         style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)', height: '90vh' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4 flex-shrink-0">
+        <div className="flex justify-between items-center mb-6 flex-shrink-0">
           <h2 className="text-xl font-bold" style={{ color: 'var(--text-default)' }}>Comprobar el Contraste de la Paleta</h2>
-          <button onClick={onClose} style={{ color: 'var(--text-muted)' }}>
-            <X size={24} />
-          </button>
-        </div>
-        
-        <div className="flex-1 overflow-auto pr-2">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-            {filteredCombinations.map(({ bg, fg, ratio, level }, index) => (
-              <div 
-                key={index}
-                className="rounded-lg p-2 text-sm flex flex-col justify-center"
-                style={{ backgroundColor: bg, color: fg }}
-              >
-                <p className="font-bold">Texto de ejemplo</p>
-                <p className="text-xs mt-1">Automóvil club</p>
-                <div className="mt-2 pt-2 border-t text-xs font-mono" style={{ borderColor: tinycolor(fg).setAlpha(0.3).toRgbString() }}>
-                  <span>{ratio.toFixed(2)}:1 </span>
-                  <span className={`font-bold ${level === 'AAA' ? 'text-green-400' : 'text-yellow-400'}`}>{level}</span>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-default)'}}>
+              <span>Solo Válido (AA/AAA)</span>
+              <Switch checked={showOnlyValid} onCheckedChange={setShowOnlyValid} />
+            </label>
+            <button onClick={onClose} style={{ color: 'var(--text-muted)' }}>
+              <X size={24} />
+            </button>
           </div>
         </div>
         
-        <div className="flex justify-end items-center mt-4 pt-4 border-t flex-shrink-0" style={{borderColor: 'var(--border-default)'}}>
-          <p className="text-xs text-gray-500 mr-4">Se muestran {filteredCombinations.length} de {combinations.length} combinaciones.</p>
-          <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-default)'}}>
-            <span>Solo Válido</span>
-            <Switch checked={showOnlyValid} onCheckedChange={setShowOnlyValid} />
-          </label>
+        <div className="flex-1 overflow-auto">
+          <div 
+            className="grid gap-1" 
+            style={{ gridTemplateColumns: `30px repeat(${fullPalette.length}, 1fr)` }}
+          >
+            {/* Top-left empty cell */}
+            <div />
+
+            {/* Top header row (foreground colors) */}
+            {fullPalette.map((fgColor, index) => (
+              <div key={`fg-${index}`} className="h-8 rounded-md" style={{ backgroundColor: fgColor }} title={fgColor.toUpperCase()} />
+            ))}
+
+            {/* Matrix body */}
+            {fullPalette.map((bgColor, rowIndex) => (
+              <React.Fragment key={`row-${rowIndex}`}>
+                {/* Side header cell (background color) */}
+                <div className="w-8 h-full rounded-md" style={{ backgroundColor: bgColor }} title={bgColor.toUpperCase()} />
+                
+                {/* Row of contrast checks */}
+                {fullPalette.map((fgColor, colIndex) => {
+                  if (bgColor === fgColor) {
+                    return <div key={`cell-${rowIndex}-${colIndex}`} className="rounded-md" style={{ backgroundColor: bgColor }} />;
+                  }
+
+                  const ratio = tinycolor.readability(bgColor, fgColor);
+                  let level = '';
+                  if (ratio >= 7) level = 'AAA';
+                  else if (ratio >= 4.5) level = 'AA';
+                  
+                  const levelColor = level === 'AAA' ? 'var(--text-success)' : level === 'AA' ? 'var(--text-attention)' : 'var(--text-critical)';
+                  const isVisible = !showOnlyValid || level;
+
+                  return (
+                    <div 
+                      key={`cell-${rowIndex}-${colIndex}`} 
+                      className={`relative group h-full rounded-md flex flex-col items-center justify-center text-xs p-1 transition-opacity ${isVisible ? 'opacity-100' : 'opacity-20'}`}
+                      style={{ backgroundColor: bgColor, color: fgColor, minHeight: '50px' }}
+                    >
+                      <div className="text-center transition-opacity group-hover:opacity-0">
+                        <span className="font-bold">{ratio.toFixed(2)}</span>
+                        {level && <span className="font-bold" style={{ color: levelColor }}>{level}</span>}
+                      </div>
+                      <div className="absolute inset-0 flex opacity-0 group-hover:opacity-100 transition-opacity rounded-md overflow-hidden cursor-pointer">
+                        <div
+                          className="w-1/2 h-full flex items-center justify-center bg-black/50 hover:bg-black/70"
+                          onClick={(e) => { e.stopPropagation(); onCopy(bgColor, `Fondo ${bgColor.toUpperCase()} copiado!`); }}
+                          title={`Copiar fondo: ${bgColor.toUpperCase()}`}
+                        >
+                           <span className="text-[10px] font-bold" style={{ color: tinycolor.mostReadable(bgColor, ['#fff', '#000']).toHexString() }}>BG</span>
+                        </div>
+                        <div
+                          className="w-1/2 h-full flex items-center justify-center bg-black/50 hover:bg-black/70"
+                          onClick={(e) => { e.stopPropagation(); onCopy(fgColor, `Texto ${fgColor.toUpperCase()} copiado!`); }}
+                          title={`Copiar texto: ${fgColor.toUpperCase()}`}
+                        >
+                           <span className="text-[10px] font-bold" style={{ color: tinycolor.mostReadable(bgColor, ['#fff', '#000']).toHexString() }}>FG</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -1608,6 +1641,7 @@ function App() {
         {isContrastCheckerVisible && <PaletteContrastChecker 
             palette={explorerPalette}
             onClose={() => setIsContrastCheckerVisible(false)}
+            onCopy={handleCopy}
         />}
       </div>
     </>
