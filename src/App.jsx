@@ -200,6 +200,90 @@ const AdBanner = () => {
   );
 };
 
+// --- Modal de Ajuste de Paleta ---
+const PaletteAdjusterModal = ({ adjustments, onAdjust, onClose, brandColor }) => {
+
+  const SliderControl = ({ label, value, min, max, onChange, gradient }) => (
+    <div className="grid grid-cols-[1fr_80px] items-center gap-4">
+        <label className="text-sm font-medium" style={{ color: 'var(--text-default)' }}>{label}</label>
+        <input 
+          type="number"
+          value={value}
+          onChange={(e) => onChange(parseInt(e.target.value, 10))}
+          className="w-full px-2 py-1 rounded-md border text-sm text-center"
+          style={{ backgroundColor: 'var(--bg-muted)', borderColor: 'var(--border-default)', color: 'var(--text-default)'}}
+        />
+        <div className="col-span-2">
+            <input
+                type="range"
+                min={min}
+                max={max}
+                value={value}
+                onChange={(e) => onChange(parseInt(e.target.value, 10))}
+                className="w-full custom-slider"
+                style={{ '--slider-gradient': gradient }}
+            />
+        </div>
+    </div>
+  );
+
+  const gradients = {
+    hue: 'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
+    saturation: `linear-gradient(to right, ${tinycolor(brandColor).desaturate(100).toHexString()}, ${tinycolor(brandColor).saturate(100).toHexString()})`,
+    brightness: `linear-gradient(to right, #000, ${brandColor}, #fff)`,
+    temperature: 'linear-gradient(to right, #66b3ff, #fff, #ffc966)'
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div 
+        className="p-6 rounded-xl border max-w-sm w-full relative" 
+        style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold" style={{ color: 'var(--text-default)' }}>Ajustar Paleta</h2>
+          <button onClick={onClose} style={{ color: 'var(--text-muted)' }}><X size={24} /></button>
+        </div>
+        <div className="space-y-6">
+          <SliderControl 
+            label="Matiz"
+            value={adjustments.hue}
+            min="-180"
+            max="180"
+            onChange={(v) => onAdjust({...adjustments, hue: v})}
+            gradient={gradients.hue}
+          />
+          <SliderControl 
+            label="Saturación"
+            value={adjustments.saturation}
+            min="-100"
+            max="100"
+            onChange={(v) => onAdjust({...adjustments, saturation: v})}
+            gradient={gradients.saturation}
+          />
+          <SliderControl 
+            label="Brillo"
+            value={adjustments.brightness}
+            min="-100"
+            max="100"
+            onChange={(v) => onAdjust({...adjustments, brightness: v})}
+            gradient={gradients.brightness}
+          />
+          <SliderControl 
+            label="Temperatura"
+            value={adjustments.temperature}
+            min="-100"
+            max="100"
+            onChange={(v) => onAdjust({...adjustments, temperature: v})}
+            gradient={gradients.temperature}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 // --- Modal de Variaciones ---
 const VariationsModal = ({ explorerPalette, onClose, onColorSelect }) => {
@@ -748,6 +832,7 @@ function App() {
   const [isHelpVisible, setIsHelpVisible] = useState(false);
   const [isVariationsVisible, setIsVariationsVisible] = useState(false);
   const [isContrastCheckerVisible, setIsContrastCheckerVisible] = useState(false);
+  const [isPaletteAdjusterVisible, setIsPaletteAdjusterVisible] = useState(false);
   
   const [accessibility, setAccessibility] = useState({ btn: { ratio: 0, level: 'Fail'}, text: { ratio: 0, level: 'Fail'} });
   const [accessibilityColors, setAccessibilityColors] = useState({
@@ -768,10 +853,13 @@ function App() {
   const [simulationMode, setSimulationMode] = useState('none');
   const [primaryButtonTextColor, setPrimaryButtonTextColor] = useState('#FFFFFF');
   
+  const [originalExplorerPalette, setOriginalExplorerPalette] = useState([]);
   const [explorerPalette, setExplorerPalette] = useState([]);
   const [explorerGrayShades, setExplorerGrayShades] = useState([]);
   const [colorHistory, setColorHistory] = useState([defaultState.brandColor]);
   const [historyIndex, setHistoryIndex] = useState(0);
+
+  const [paletteAdjustments, setPaletteAdjustments] = useState({ hue: 0, saturation: 0, brightness: 0, temperature: 0 });
 
   const isUpdateFromExplorer = useRef(false);
 
@@ -836,12 +924,38 @@ function App() {
             break;
         }
     }
-    setExplorerPalette(newPalette.slice(0,20));
+    setOriginalExplorerPalette(newPalette.slice(0,20));
+    setPaletteAdjustments({ hue: 0, saturation: 0, brightness: 0, temperature: 0 });
 
     const baseForGray = newPalette.length > 9 ? newPalette[9] : tinycolor.random().toHexString();
     const harmonicGray = tinycolor(baseForGray).desaturate(85).toHexString();
     setExplorerGrayShades(generateShades(harmonicGray));
 };
+
+  useEffect(() => {
+    if (!originalExplorerPalette.length) return;
+
+    const adjusted = originalExplorerPalette.map(hex => {
+        let color = tinycolor(hex);
+        const { hue, saturation, brightness, temperature } = paletteAdjustments;
+
+        if (hue !== 0) color = color.spin(hue);
+        
+        if (saturation > 0) color = color.saturate(saturation);
+        if (saturation < 0) color = color.desaturate(Math.abs(saturation));
+        
+        if (brightness > 0) color = color.lighten(brightness);
+        if (brightness < 0) color = color.darken(Math.abs(brightness));
+        
+        if (temperature > 0) color = tinycolor.mix(color, '#ffc966', temperature);
+        if (temperature < 0) color = tinycolor.mix(color, '#66b3ff', Math.abs(temperature));
+
+        return color.toHexString();
+    });
+
+    setExplorerPalette(adjusted);
+  }, [originalExplorerPalette, paletteAdjustments]);
+
   // Función centralizada para actualizar el color de marca y manejar el historial
   const updateBrandColor = (newColor) => {
     if (newColor === brandColor) return;
@@ -1294,6 +1408,63 @@ function App() {
   
   return (
     <>
+      <style>{`
+        .custom-slider {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          background: transparent;
+        }
+        
+        .custom-slider::-webkit-slider-runnable-track {
+          width: 100%;
+          height: 8px;
+          cursor: pointer;
+          background: var(--slider-gradient);
+          border-radius: 4px;
+        }
+
+        .custom-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          margin-top: -6px;
+          height: 20px;
+          width: 20px;
+          background: #fff;
+          cursor: pointer;
+          border-radius: 50%;
+          border: 4px solid var(--action-primary-default);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+          transition: transform 0.1s ease-in-out;
+        }
+        
+        .custom-slider:active::-webkit-slider-thumb {
+          transform: scale(1.15);
+        }
+
+        .custom-slider::-moz-range-track {
+          width: 100%;
+          height: 8px;
+          cursor: pointer;
+          background: var(--slider-gradient);
+          border-radius: 4px;
+        }
+
+        .custom-slider::-moz-range-thumb {
+          height: 20px;
+          width: 20px;
+          background: #fff;
+          cursor: pointer;
+          border-radius: 50%;
+          border: 4px solid var(--action-primary-default);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+          transition: transform 0.1s ease-in-out;
+        }
+        
+        .custom-slider:active::-moz-range-thumb {
+            transform: scale(1.15);
+        }
+      `}</style>
       <svg width="0" height="0" style={{ position: 'absolute' }}>
         <defs>
           <filter id="protanopia"><feColorMatrix in="SourceGraphic" type="matrix" values="0.567, 0.433, 0, 0, 0, 0.558, 0.442, 0, 0, 0, 0, 0.242, 0.758, 0, 0, 0, 0, 0, 1, 0" /></filter>
@@ -1521,6 +1692,9 @@ function App() {
                             <button onClick={() => cyclePreviewMode(colorModePreview, setColorModePreview, ['white', 'T950', 'black', 'T0', 'default'])} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)'}}>
                                <Layers size={14}/> Alternar Fondo
                             </button>
+                             <button onClick={() => setIsPaletteAdjusterVisible(true)} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)' }}>
+                                <Settings size={14} /> Ajustar Paleta
+                            </button>
                              <button onClick={() => setIsVariationsVisible(true)} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)' }}>
                                 <Palette size={14} /> Variaciones
                             </button>
@@ -1642,6 +1816,12 @@ function App() {
             palette={explorerPalette}
             onClose={() => setIsContrastCheckerVisible(false)}
             onCopy={handleCopy}
+        />}
+        {isPaletteAdjusterVisible && <PaletteAdjusterModal
+            adjustments={paletteAdjustments}
+            onAdjust={setPaletteAdjustments}
+            onClose={() => setIsPaletteAdjusterVisible(false)}
+            brandColor={brandColor}
         />}
       </div>
     </>
