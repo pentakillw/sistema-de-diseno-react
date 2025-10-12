@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import tinycolor from 'tinycolor2';
-import { Sparkles, Wand2, HelpCircle, X, Check, Clipboard, Download, Upload, AlertCircle, RefreshCcw, FileCode, Eye, Palette, Settings, Info, CheckCircle, AlertTriangle, Sun, Moon, Layers, ChevronDown, Undo2, Redo2 } from 'lucide-react';
+import { Sparkles, Wand2, HelpCircle, X, Check, Clipboard, Download, Upload, AlertCircle, RefreshCcw, FileCode, Eye, Palette, Settings, Info, CheckCircle, AlertTriangle, Sun, Moon, Layers, ChevronDown, Undo2, Redo2, ShieldCheck } from 'lucide-react';
 import { HexColorPicker, HexColorInput } from 'react-colorful';
 
 // --- Funciones de Utilidad de Colores (lógica interna en inglés) ---
@@ -330,6 +330,70 @@ const VariationsModal = ({ explorerPalette, onClose, onColorSelect }) => {
   );
 };
 
+// --- Modal Comprobador de Contraste ---
+const PaletteContrastChecker = ({ palette, onClose }) => {
+  const [showOnlyValid, setShowOnlyValid] = useState(false);
+
+  const combinations = [];
+  for (const bg of palette) {
+    for (const fg of palette) {
+      if (bg === fg) continue;
+      const ratio = tinycolor.readability(bg, fg);
+      let level = '';
+      if (ratio >= 7) level = 'AAA';
+      else if (ratio >= 4.5) level = 'AA';
+      
+      combinations.push({ bg, fg, ratio, level });
+    }
+  }
+
+  const filteredCombinations = showOnlyValid ? combinations.filter(c => c.level) : combinations;
+  
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div 
+        className="p-6 rounded-xl border max-w-5xl w-full relative flex flex-col" 
+        style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-default)', height: '90vh' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
+          <h2 className="text-xl font-bold" style={{ color: 'var(--text-default)' }}>Comprobar el Contraste de la Paleta</h2>
+          <button onClick={onClose} style={{ color: 'var(--text-muted)' }}>
+            <X size={24} />
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-auto pr-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {filteredCombinations.map(({ bg, fg, ratio, level }, index) => (
+              <div 
+                key={index}
+                className="rounded-lg p-2 text-sm flex flex-col justify-center"
+                style={{ backgroundColor: bg, color: fg }}
+              >
+                <p className="font-bold">Texto de ejemplo</p>
+                <p className="text-xs mt-1">Automóvil club</p>
+                <div className="mt-2 pt-2 border-t text-xs font-mono" style={{ borderColor: tinycolor(fg).setAlpha(0.3).toRgbString() }}>
+                  <span>{ratio.toFixed(2)}:1 </span>
+                  <span className={`font-bold ${level === 'AAA' ? 'text-green-400' : 'text-yellow-400'}`}>{level}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="flex justify-end items-center mt-4 pt-4 border-t flex-shrink-0" style={{borderColor: 'var(--border-default)'}}>
+          <p className="text-xs text-gray-500 mr-4">Se muestran {filteredCombinations.length} de {combinations.length} combinaciones.</p>
+          <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-default)'}}>
+            <span>Solo Válido</span>
+            <Switch checked={showOnlyValid} onCheckedChange={setShowOnlyValid} />
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const AccessibilityCard = ({ accessibility, colors, isVisible, onToggle }) => {
   const cardStyle = {
@@ -650,6 +714,7 @@ function App() {
   const [isGrayPickerVisible, setIsGrayPickerVisible] = useState(false);
   const [isHelpVisible, setIsHelpVisible] = useState(false);
   const [isVariationsVisible, setIsVariationsVisible] = useState(false);
+  const [isContrastCheckerVisible, setIsContrastCheckerVisible] = useState(false);
   
   const [accessibility, setAccessibility] = useState({ btn: { ratio: 0, level: 'Fail'}, text: { ratio: 0, level: 'Fail'} });
   const [accessibilityColors, setAccessibilityColors] = useState({
@@ -1426,6 +1491,9 @@ function App() {
                              <button onClick={() => setIsVariationsVisible(true)} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)' }}>
                                 <Palette size={14} /> Variaciones
                             </button>
+                            <button onClick={() => setIsContrastCheckerVisible(true)} className="text-sm font-medium py-1 px-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-default)' }}>
+                                <ShieldCheck size={14} /> Comprobar Contraste
+                            </button>
                         </div>
                     </div>
                     <ColorPalette isExplorer={true} shades={explorerPalette} onShadeCopy={handleExplorerColorPick} themeOverride={tinycolor(colorModeBg).isLight() ? 'light' : 'dark'}/>
@@ -1536,6 +1604,10 @@ function App() {
             explorerPalette={explorerPalette}
             onClose={() => setIsVariationsVisible(false)}
             onColorSelect={updateBrandColor}
+        />}
+        {isContrastCheckerVisible && <PaletteContrastChecker 
+            palette={explorerPalette}
+            onClose={() => setIsContrastCheckerVisible(false)}
         />}
       </div>
     </>
