@@ -10,7 +10,7 @@ https://www.erome.com/a/6OYsfonP
 ## React Compiler
 https://www.erome.com/Brightroar_?page=7
 https://www.erome.com/a/HmHmN8kn
-
+https://www.erome.com/a/QDciUSLe
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 https://www.erome.com/a/iS3aP4Gf
 ## Expanding the ESLint configuration
