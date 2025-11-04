@@ -9,8 +9,10 @@ Currently, two official plugins are available:
 https://www.erome.com/a/6OYsfonP
 ## React Compiler
 https://www.erome.com/Brightroar_?page=7
+
+
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 https://www.erome.com/a/iS3aP4Gf
 ## Expanding the ESLint configuration
-
+https://www.erome.com/a/GpasjZbq
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
