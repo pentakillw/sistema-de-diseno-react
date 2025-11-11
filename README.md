@@ -2,11 +2,14 @@
 https://www.erome.com/a/lgfdj4Ra
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 https://www.erome.com/a/dZwNNmQD
+https://www.erome.com/a/X0cBhjiG cromots!!
 Currently, two official plugins are available:
 lo mejor https://www.erome.com/a/XARbpN4b !!!!!!!!
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 https://www.erome.com/a/6OYsfonP
+
+
 ## React Compiler
 https://www.erome.com/Brightroar_?page=7
 https://www.erome.com/a/HmHmN8kn
