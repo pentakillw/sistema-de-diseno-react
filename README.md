@@ -8,7 +8,8 @@ lo mejor https://www.erome.com/a/XARbpN4b !!!!!!!!
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 https://www.erome.com/a/6OYsfonP
-
+https://www.erome.com/a/kVm2tsgl
+papantla
 
 ## React Compiler
 https://www.erome.com/Brightroar_?page=7
