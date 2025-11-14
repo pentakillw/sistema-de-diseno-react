@@ -9,6 +9,7 @@ lo mejor https://www.erome.com/a/XARbpN4b !!!!!!!!
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 https://www.erome.com/a/6OYsfonP
 https://www.erome.com/a/kVm2tsgl
+https://www.erome.com/a/9PiF9r8u
 papantla
 
 ## React Compiler
